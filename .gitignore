@@ -1,0 +1,7 @@
+*.swp
+*.log
+*.jpg
+*.zip
+*.jpeg
+tmp/
+temp/
