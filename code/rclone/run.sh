@@ -9,6 +9,7 @@ LOGFILE="$LOGDIR/$LOGFILE"
 CONFIG="${RCLONE_CFG:-./test_conf.conf}"
 SRC="${RCLONE_SRC:-s3-source-1}"
 DEST="${RCLONE_DEST:-tmp/}"
+BUCKET="${RCLONE_BUCKET:-tmp/}"
 
 mkdir -p $DEST
 
@@ -20,7 +21,7 @@ params="--config=$CONFIG --log-file=$LOGFILE --transfers=$CONCURRENCY --buffer-s
 # cmd="rclone -v ls  $SRC:hls-sentinel-validation-scenes"
 
 # copy from source $SRC to current
-cmd="rclone -v copy --no-traverse $SRC:hls-sentinel-validation-scenes/ondaDIAS_2015_2016 $DEST"
+cmd="rclone -v copy --no-traverse $SRC:$BUCKET $DEST"
 
 cmd="$cmd $params"
 
