@@ -4,7 +4,9 @@ from __future__ import annotations
 
 from typing import List, Optional
 
+import copy
 import os
+import random
 import re
 import subprocess
 import tempfile
@@ -86,7 +88,7 @@ class Rclone:
         logger.info(f"{len(files)} files found at {src}:{path}")
         return [first] + files
 
-    def copy(
+    def copy_files(
         self,
         src: str,
         dest: str,
@@ -96,9 +98,48 @@ class Rclone:
         buffer_size: int = 512,
         multi_thread_streams: int = 5,
         multi_thread_cutoff: int = 50,
+        update: bool = True,
+        randomize: bool = False,
         debug: bool = False,
     ):
+        """
+        Args:
+            src: ``str``
+                Source name residing in the config file
+            dest: ``str``
+                Destination name residing in the config file
+            path: ``str``
+                Destination path.
+                Used in conjoint with ``dest`` as `dest:path`
+            files: ``List[str]``
+                List of paths in the source `src`.
+            ntransfers: ``int``
+                Concurrency.
+            buffer_size: ``int``
+                Memory size in MegaByte (MB) to allocate for each file
+            multi_thread_streams: ``int``
+                How many chunks to be used for each file for multi-stream transfer?
+            multi_thread_cutoff: ``int``
+                What's the minimum number of file size (in MB) to break into multiple streams?
+                That is: a file will be broken into ``multi_thread_streams`` if its size
+                exceeds ``multi_thread_cutoff``
+            update: ``bool``
+                If this flag is set we add ``--update`` flag to rclone command.
+                If set, rclone won't copy files that are already in the destination.
+            randomize: ``bool``
+                If  set, we first shuffle the ``files`` list.
+
+        Note:
+            - ``multi_thread_cutoff`` and ``multi_thread_streams`` are more
+            like hyperparameter (tunable).
+            - high ``multi_thread_streams`` and low ``multi_thread_cutoff`` can
+            significantly degrade the performance as it will have more network overhead.
+        """
         logger.info(f"Transferring {len(files)} files from {src} to {dest}:{path}")
+
+        if randomize:
+            files = copy.deepcopy(files)
+            random.shuffle(files)
 
         if debug:
             logger.debug(f"Files ==> {files}")
@@ -122,8 +163,7 @@ class Rclone:
                 f"--multi-thread-streams={multi_thread_streams}",
                 f"--multi-thread-cutoff={multi_thread_cutoff}M",
                 "--progress",
-                # "--update",
-            ]
+            ] + (["--update"] if update else [])
             exdto = ShellExecutor()(cmd)
 
         # with open(self.logfile, "a") as flog:
@@ -136,15 +176,17 @@ class Rclone:
 def main():
     rclone = Rclone(cfg="rclone.conf", logfile="tmp/log.txt", verbosity="-v")
     files = rclone.get_all_files(src="s3-source-2", path="gael-test/")
-    _ = rclone.copy(
+    _ = rclone.copy_files(
         src="s3-source-2",
         dest="s3-target-2",
         path="evaluation-transfers-bucket-testing-only",
         # files=files[:10],
-        files=files[-1:-6:-1],
+        files=files[-1:-7:-1],
         buffer_size=1024,
         multi_thread_streams=5,
         multi_thread_cutoff=25,
+        randomize=True,
+        update=False,
         debug=True,
     )
     # print(files[:5])
