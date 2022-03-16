@@ -138,7 +138,7 @@ class NifiAutomation:
         complete_log_processor = processor_name_map['Completed transfer']
         complete_log_update_json = {"component":{"id":complete_log_processor['id'],"name":"Completed transfer","config":{"concurrentlySchedulableTaskCount":"1","schedulingPeriod":"0 sec","executionNode":"ALL","penaltyDuration":"30 sec","yieldDuration":"1 sec","bulletinLevel":"WARN","schedulingStrategy":"TIMER_DRIVEN","comments":"","runDurationMillis":0,"autoTerminatedRelationships":["success"],"properties":{"log-message":"Completed the transfer " + session_uuid + " ${filename}"}},"state":"STOPPED"},"revision":{"version":complete_log_processor['revision']['version']},"disconnectedNodeAcknowledged":"false"}
         r = requests.put(nifi_url + '/processors/' + complete_log_processor['id'], json=complete_log_update_json, verify=False)
-        print("Updating Complete trnsfer log processor")
+        print("Updating Complete transfer log processor")
 
         # Starting the process group
         #
