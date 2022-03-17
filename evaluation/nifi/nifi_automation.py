@@ -8,9 +8,11 @@ import yaml
 
 class NifiAutomation:
 
-    def __init__(self, config_yaml) -> None:
+    def __init__(self, config_yaml, file_list, nifi_dir) -> None:
         with open(config_yaml) as f:
             self.config = yaml.load(f)
+            self.nifi_dir = nifi_dir
+            self.file_list = file_list
 
     def run_automation(self):
 
@@ -24,7 +26,7 @@ class NifiAutomation:
 
         nifi_url = 'https://localhost:8443/nifi-api'
         template_file = "nifi/nifi-s3.xml"
-        log_file_location = "/proj/MFT/nifi-1.15.3/logs/nifi-app.log"
+        log_file_location = self.nifi_dir + "/logs/nifi-app.log"
 
         source_token = self.config['source_token']
         source_secret = self.config['source_secret']
@@ -38,7 +40,9 @@ class NifiAutomation:
         dest_s3_bucket = self.config['dest_s3_bucket']
         dest_s3_region = self.config['dest_s3_region']
 
-        total_files = int(self.config['total_files'])
+
+        total_files = len(self.file_list)
+
         session_uuid = random_string(10)
         print("Session UUID: " + session_uuid)
 
@@ -47,7 +51,7 @@ class NifiAutomation:
 
         # Stopping the process group before resetting the template
 
-        print("Stopping process group")
+        print("Stopping process group", process_group_id)
         update_process_group_json = {"id":process_group_id,"state":"STOPPED","disconnectedNodeAcknowledged":"false"}
         r = requests.put(nifi_url + '/flow/process-groups/' + process_group_id, json=update_process_group_json, verify=False)
         print("Status", r.status_code)
@@ -104,15 +108,71 @@ class NifiAutomation:
         # Updating the credentials
 
         list_s3_processor = processor_name_map['ListS3']
-        list_s3_update_json = {"component":{"id":list_s3_processor['id'],"name":"ListS3","config":{"schedulingPeriod":"0 sec","executionNode":"PRIMARY","penaltyDuration":"30 sec","yieldDuration":"1 sec","bulletinLevel":"WARN","schedulingStrategy":"TIMER_DRIVEN","comments":"","autoTerminatedRelationships":[],"properties":{"Access Key":source_token,"Secret Key":source_secret}},"state":"STOPPED"},"revision":{"version":list_s3_processor['revision']['version']},"disconnectedNodeAcknowledged":"false"}
+        list_s3_update_json = {
+            "component":{
+                "id":list_s3_processor['id'],
+                "name":"ListS3",
+                "config":{
+                    "schedulingPeriod":"0 sec",
+                    "executionNode":"PRIMARY",
+                    "penaltyDuration":"30 sec",
+                    "yieldDuration":"1 sec",
+                    "bulletinLevel":"WARN",
+                    "schedulingStrategy":"TIMER_DRIVEN",
+                    "comments":"",
+                    "autoTerminatedRelationships":[],
+                    "properties":{
+                        "Bucket":source_s3_bucket,
+                        "Access Key":source_token,
+                        "Secret Key":source_secret,
+                        "Endpoint Override URL":source_s3_endpoint,
+                        "Region":source_s3_region
+                    }
+                },
+                "state":"STOPPED"
+            },
+            "revision":{
+                "version":list_s3_processor['revision']['version']
+            },
+            "disconnectedNodeAcknowledged":"false"
+        }
 
         print("Updating ListS3 processor")
         r = requests.put(nifi_url + '/processors/' + list_s3_processor['id'], json=list_s3_update_json, verify=False)
         print("Status", r.status_code)
 
 
+
         fetch_s3_processor = processor_name_map['FetchS3Object']
-        fetch_s3_update_json = {"component":{"id":fetch_s3_processor['id'],"name":"FetchS3Object","config":{"concurrentlySchedulableTaskCount":"1","schedulingPeriod":"0 sec","executionNode":"ALL","penaltyDuration":"30 sec","yieldDuration":"1 sec","bulletinLevel":"WARN","schedulingStrategy":"TIMER_DRIVEN","comments":"","runDurationMillis":0,"autoTerminatedRelationships":["failure"],"properties":{"Access Key":source_token,"Secret Key":source_secret}},"state":"STOPPED"},"revision":{"version":fetch_s3_processor['revision']['version']},"disconnectedNodeAcknowledged":"false"}
+        fetch_s3_update_json = {
+            "component":{
+                "id":fetch_s3_processor['id'],
+                "name":"FetchS3Object",
+                "config":{
+                    "concurrentlySchedulableTaskCount":"1",
+                    "schedulingPeriod":"0 sec",
+                    "executionNode":"ALL",
+                    "penaltyDuration":"30 sec",
+                    "yieldDuration":"1 sec",
+                    "bulletinLevel":"WARN",
+                    "schedulingStrategy":"TIMER_DRIVEN",
+                    "comments":"","runDurationMillis":0,
+                    "autoTerminatedRelationships":["failure"],
+                    "properties":{
+                        "Bucket":source_s3_bucket,
+                        "Access Key":source_token,
+                        "Secret Key":source_secret,
+                        "Endpoint Override URL":source_s3_endpoint,
+                        "Region":source_s3_region
+                    }
+                },
+                "state":"STOPPED"
+            },
+            "revision":{
+                "version":fetch_s3_processor['revision']['version']
+            },
+            "disconnectedNodeAcknowledged":"false"
+        }
 
         print("Updating FetchS3Object processor")
         r = requests.put(nifi_url + '/processors/' + fetch_s3_processor['id'], json=fetch_s3_update_json, verify=False)
@@ -120,7 +180,36 @@ class NifiAutomation:
 
 
         put_s3_processor = processor_name_map['PutS3Object']
-        put_s3_update_json = {"component":{"id":put_s3_processor["id"],"name":"PutS3Object","config":{"concurrentlySchedulableTaskCount":"1","schedulingPeriod":"0 sec","executionNode":"ALL","penaltyDuration":"30 sec","yieldDuration":"1 sec","bulletinLevel":"WARN","schedulingStrategy":"TIMER_DRIVEN","comments":"","runDurationMillis":0,"autoTerminatedRelationships":["failure"],"properties":{"Access Key":dest_token,"Secret Key":dest_secret}},"state":"STOPPED"},"revision":{"version":put_s3_processor['revision']['version']},"disconnectedNodeAcknowledged":"false"}
+        put_s3_update_json = {
+            "component":{
+                "id":put_s3_processor["id"],
+                "name":"PutS3Object",
+                "config":{
+                    "concurrentlySchedulableTaskCount":"1",
+                    "schedulingPeriod":"0 sec",
+                    "executionNode":"ALL",
+                    "penaltyDuration":"30 sec",
+                    "yieldDuration":"1 sec",
+                    "bulletinLevel":"WARN",
+                    "schedulingStrategy":
+                        "TIMER_DRIVEN",
+                    "comments":"","runDurationMillis":0,
+                    "autoTerminatedRelationships":["failure"],
+                    "properties":{
+                        "Bucket":dest_s3_bucket,
+                        "Access Key":dest_token,
+                        "Secret Key":dest_secret,
+                        "Endpoint Override URL":dest_s3_endpoint,
+                        "Region":dest_s3_region
+                    }
+                },
+                "state":"STOPPED"
+            },
+            "revision":{
+                "version":put_s3_processor['revision']['version']
+            },
+            "disconnectedNodeAcknowledged":"false"
+        }
 
         print("Updating PutS3Object processor")
         r = requests.put(nifi_url + '/processors/' + put_s3_processor['id'], json=put_s3_update_json, verify=False)
@@ -138,7 +227,7 @@ class NifiAutomation:
         complete_log_processor = processor_name_map['Completed transfer']
         complete_log_update_json = {"component":{"id":complete_log_processor['id'],"name":"Completed transfer","config":{"concurrentlySchedulableTaskCount":"1","schedulingPeriod":"0 sec","executionNode":"ALL","penaltyDuration":"30 sec","yieldDuration":"1 sec","bulletinLevel":"WARN","schedulingStrategy":"TIMER_DRIVEN","comments":"","runDurationMillis":0,"autoTerminatedRelationships":["success"],"properties":{"log-message":"Completed the transfer " + session_uuid + " ${filename}"}},"state":"STOPPED"},"revision":{"version":complete_log_processor['revision']['version']},"disconnectedNodeAcknowledged":"false"}
         r = requests.put(nifi_url + '/processors/' + complete_log_processor['id'], json=complete_log_update_json, verify=False)
-        print("Updating Complete transfer log processor")
+        print("Updating Complete trnsfer log processor")
 
         # Starting the process group
         #
@@ -153,8 +242,6 @@ class NifiAutomation:
 
         while(1):
             sleep(5)
-
-
             #read file line by line
             with open(log_file_location, 'r') as f:
                 for line in f:
@@ -168,6 +255,7 @@ class NifiAutomation:
                         else:
                             end_time_map[file_name] = utc_time
 
+                print(start_time_map)
                 if len(end_time_map) == total_files:
                     break
 

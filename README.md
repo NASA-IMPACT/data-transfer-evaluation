@@ -1,3 +1,7 @@
+This Repository is under development. We will clean it up soon.
+
+Meanwile checkout the [Evaluation Framework Readme](evaluation/Readme.md) for running sample benchmarks.
+
 ### Known Facts:
 
 Nifi uses standard S3 SDK libraries to upload and download. Upload is done through Multipart uploads which makes the
@@ -25,7 +29,7 @@ we have to handle the concurrency and failover. This approach is conceptually si
 parallel TCP streams. The advantage comes into play when the data link is too long (inter-continal) and prone to have more
 missing packets. In such a case, breakdown of a single TCP stream does not affect the transfer of the entire file.
 
-I plan to write an example code which can do stripped S3 transfers between two s3 endpoints (AWS S3 and ESA Openstack).
+We plan to enhance the example code to do stripped S3 transfers between two s3 endpoints (AWS S3 and ESA Openstack).
 Initial simulations are planned to do using MinIO S3 compatible APIs and Emulab infrastructure.
 
 

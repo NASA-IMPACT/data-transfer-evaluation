@@ -1,3 +1,4 @@
+from time import sleep
 import urllib3
 from datetime import datetime
 import yaml
@@ -7,7 +8,7 @@ import os
 
 class RcloneAutomation:
 
-    def __init__(self, config_yaml) -> None:
+    def __init__(self, config_yaml, file_list) -> None:
         with open(config_yaml) as f:
             self.config = yaml.load(f)
             self.sourceName = "s3source"
@@ -18,6 +19,7 @@ class RcloneAutomation:
             self.ntransfers = 8
             self.s3_max_upload_parts = 10
             self.s3_upload_concurrency = 10
+            self.file_list = file_list
 
     def run_automation(self):
 
@@ -36,7 +38,7 @@ class RcloneAutomation:
         dest_s3_bucket = self.config['dest_s3_bucket']
         dest_s3_region = self.config['dest_s3_region']
 
-        total_files = int(self.config['total_files'])
+        total_files = len(self.file_list)
 
         rclone_log_file = "rclone/rclone.log"
         rclone_config_file = "rclone/rclone.conf"
@@ -92,7 +94,7 @@ class RcloneAutomation:
 
         with open(rclone_log_file, 'r') as f:
             for line in f:
-                if line.find("multipart upload starting chunk") != -1 or line.find("Transferring unconditionally") != -1:
+                if line.find("multipart upload starting chunk 1 size") != -1 or line.find("Transferring unconditionally") != -1:
                     print(line.split(":")[3].strip(), line.split("DEBUG")[0].strip())
                     utc_time = datetime.strptime(line.split("DEBUG")[0].strip(), "%Y/%m/%d %H:%M:%S")
                     start_time_map[line.split(":")[3].strip()] = utc_time

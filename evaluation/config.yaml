@@ -4,7 +4,6 @@ source_secret: "password"
 source_s3_endpoint: "http://192.168.1.1:9000"
 source_s3_bucket: "testbucket"
 source_s3_region: "us-east-1"
-total_files: 3
 
 dest_token: "admin"
 dest_secret: "password"
