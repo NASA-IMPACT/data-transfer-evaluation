@@ -10,19 +10,20 @@ from loguru import logger
 
 
 class RcloneAutomation:
-    def __init__(self, config_yaml, file_list) -> None:
+    def __init__(self, config_yaml, file_list, **params) -> None:
+        self.config = {}
         with open(config_yaml) as f:
             # self.config = yaml.load(f)
             self.config = yaml.safe_load(f)
-            self.sourceName = "s3source"
-            self.destName = "s3dest"
-            self.buffer_size = 50
-            self.multi_thread_streams = 10
-            self.multi_thread_cutoff = 50
-            self.ntransfers = 8
-            self.s3_max_upload_parts = 10
-            self.s3_upload_concurrency = 10
-            self.file_list = file_list
+
+        logger.debug(params)
+        self.buffer_size = params.get("buffer_size", 50)
+        self.multi_thread_streams = params.get("multi_thread_streams", 10)
+        self.multi_thread_cutoff = params.get("multi_thread_cutoff", 50)
+        self.ntransfers = params.get("ntransfers", 8)
+        self.s3_max_upload_parts = params.get("s3_max_upload_parts", 10)
+        self.s3_upload_concurrency = params.get("s3_upload_concurrency", 10)
+        self.file_list = file_list
 
     def run_automation(self):
 
