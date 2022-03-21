@@ -18,6 +18,10 @@ from loguru import logger
 
 @dataclass
 class ExecutionDTO:
+    """
+    Holds Shel execution data
+    """
+
     cmd: List[str]
     output: List[str]
     errors: List[str]
@@ -29,6 +33,10 @@ class ExecutionDTO:
 
 
 class ShellExecutor:
+    """
+    A barebone interface to execute shell commands...
+    """
+
     def __init__(self, stdout=subprocess.PIPE, stderr=subprocess.STDOUT):
         self.stdout = stdout
         self.stderr = stderr
@@ -58,6 +66,10 @@ class ShellExecutor:
 
 
 class Rclone:
+    """
+    rclone wrapper to be used in python
+    """
+
     def __init__(
         self, cfg: str, logfile: Optional[str] = None, verbosity: str = "-v"
     ) -> None:
@@ -80,8 +92,13 @@ class Rclone:
         if not listings:
             return []
 
+        # first line has a different listing pattern
         first = os.path.join(path, listings[0].split()[-1])
+
+        # last line is not a path
         listings = listings[1:-1]
+
+        # first word is number of bytes, not needed for now
         files = map(lambda l: " ".join(l.split()[1:]), listings)
         files = map(lambda f: os.path.join(path, f), files)
         files = list(files)
