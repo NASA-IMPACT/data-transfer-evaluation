@@ -349,8 +349,10 @@ class NifiAutomation:
         start_time_map = {}
         end_time_map = {}
 
+        # Note from Nish:
+        # Need to avoid this infinite loop.
         while 1:
-            time.sleep(5)
+            # time.sleep(5)
             # read file line by line
             with open(log_file_location, "r") as f:
                 for line in f:

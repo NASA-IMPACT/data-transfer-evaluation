@@ -35,13 +35,13 @@ mft_installation = "/proj/MFT/build"
 config_file = "config.yaml"
 
 ###### Nifi ###########
-# automation = NifiAutomation(config_file, file_list, nifi_installation)
-# nifi_result = automation.run_automation()
-# print("Nifif automation results")
-# print(nifi_result)
+automation = NifiAutomation(config_file, file_list, nifi_installation)
+nifi_result = automation.run_automation()
+print("Nifif automation results")
+print(nifi_result)
 
-# generate_grapgs("nifi", nifi_result)
-# caclulate_throughput(file_sizes, nifi_result)
+generate_grapgs("nifi", nifi_result)
+caclulate_throughput(file_sizes, nifi_result)
 
 ###### Rclone ###########
 automation = RcloneAutomation(
