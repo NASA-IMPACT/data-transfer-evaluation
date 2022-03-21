@@ -23,16 +23,17 @@ class NifiAutomation:
 
         urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
-        def random_string(string_length=10):
-            """Generate a random string of fixed length"""
-            letters = string.ascii_lowercase
-            return "".join(random.choice(letters) for i in range(string_length))
+        random_string = lambda string_length: "".join(
+            random.choice(string.ascii_lowercase) for i in range(string_length)
+        )
 
         nifi_url = "https://localhost:8443/nifi-api"
         template_file = (
             Path(__file__).parent.joinpath("nifi-s3.xml").absolute().as_posix()
         )
-        log_file_location = os.path.join(self.nifi_dir, "/logs/nifi-app.log")
+
+        log_file_location = os.path.join(self.nifi_dir, "logs/nifi-app.log")
+        logger.debug(f"log_file_location = {log_file_location}")
 
         source_token = self.config["source_token"]
         source_secret = self.config["source_secret"]
@@ -49,7 +50,7 @@ class NifiAutomation:
         total_files = len(self.file_list)
 
         session_uuid = random_string(10)
-        print("Session UUID: " + session_uuid)
+        logger.info(f"Session UUID: {session_uuid}")
 
         r = requests.get(
             nifi_url + "/flow/process-groups/root?uiOnly=true", verify=False
