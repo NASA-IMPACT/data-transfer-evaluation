@@ -1,5 +1,4 @@
 class OdataAutomation:
-
     def __init__(self, config_yaml) -> None:
         with open(config_yaml) as f:
             self.config = yaml.load(f)
