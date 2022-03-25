@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import copy
 import random
 from abc import ABC, abstractmethod
 from pathlib import Path
@@ -46,6 +47,13 @@ class AbstractAutomation(ABC):
         self.config = self.load_yaml(config_yaml)
         self._sanity_check_config(self.config)
 
+    @abstractmethod
+    def run_automation(self, **kwargs):
+        """
+        Main method to start transfer
+        """
+        raise NotImplementedError()
+
     def load_yaml(self, config_yaml: TYPE_PATH) -> Dict[str, str]:
         """
         Load config from yaml file!
@@ -73,3 +81,24 @@ class AbstractAutomation(ABC):
                 if src_key not in cfg:
                     raise ValueError(f"key={src_key} not found in the config!")
         return True
+
+    @property
+    def __classname__(self) -> str:
+        return self.__class__.__name__
+
+    def __get_redacted_cfg(self) -> Dict[str, str]:
+        def _redact_string(text, nchars=7):
+            n = len(text)
+            nchars = nchars or 0
+            nchars = min(nchars, n)
+            indices = random.choices(list(range(n)), k=nchars)
+            return "".join(["*" if i in indices else c for i, c in enumerate(text)])
+
+        res = copy.deepcopy(self.config)
+        res = map(lambda x: (x[0], _redact_string(x[1])), res.items())
+        return dict(res)
+
+    def __str__(self) -> str:
+        return (
+            f"[{self.__classname__}] | [Redacted config] = {self.__get_redacted_cfg()}"
+        )
