@@ -37,6 +37,7 @@ class AbstractAutomation(ABC):
         config: Dict[str, str],
         files: Optional[Sequence[TYPE_PATH]] = None,
         debug: bool = False,
+        **kwargs,
     ) -> None:
         assert isinstance(debug, bool)
         self.debug = bool(debug)
@@ -57,12 +58,13 @@ class AbstractAutomation(ABC):
         cfg_yaml: TYPE_PATH,
         files: Optional[Sequence[TYPE_PATH]] = None,
         debug: bool = False,
+        **kwargs,
     ) -> Type[AbstractAutomation]:
         """
         Allows initialization with yaml configuration.
         """
         cfg = cls.load_yaml(cfg_yaml)
-        return cls(config=cfg, files=files, debug=debug)
+        return cls(config=cfg, files=files, debug=debug, kwargs=kwargs)
 
     # @abstractmethod
     def run_automation(self, **kwargs):

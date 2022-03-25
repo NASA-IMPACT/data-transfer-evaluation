@@ -19,7 +19,7 @@ setup(
     author_email="np0069@uah.edu",
     # license="MIT",
     python_requires=">=3.6",
-    packages=["evalit"],
+    packages=["evalit", "evalit.rclone", "evalit.nifi", "evalit.mft"],
     install_requires=required,
     classifiers=[
         "Intended Audience :: Education",

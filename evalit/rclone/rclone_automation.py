@@ -3,19 +3,26 @@ import subprocess
 import time
 from datetime import datetime
 from pathlib import Path
+from typing import Dict, Optional, Sequence, Type
 
 import urllib3
 import yaml
 from loguru import logger
 
+urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+from .._base import AbstractAutomation
+from ..structures import TYPE_PATH
 
-class RcloneAutomation:
-    def __init__(self, config_yaml, file_list, **params) -> None:
-        self.config = {}
-        with open(config_yaml) as f:
-            # self.config = yaml.load(f)
-            self.config = yaml.safe_load(f)
 
+class RcloneAutomation(AbstractAutomation):
+    def __init__(
+        self,
+        config: Dict[str, str],
+        files: Optional[Sequence[TYPE_PATH]] = None,
+        debug: bool = False,
+        **params,
+    ) -> None:
+        super().__init__(config=config, files=files, debug=debug)
         logger.debug(params)
         self.buffer_size = params.get("buffer_size", 50)
         self.multi_thread_streams = params.get("multi_thread_streams", 10)
@@ -23,12 +30,11 @@ class RcloneAutomation:
         self.ntransfers = params.get("ntransfers", 8)
         self.s3_max_upload_parts = params.get("s3_max_upload_parts", 10)
         self.s3_upload_concurrency = params.get("s3_upload_concurrency", 10)
-        self.file_list = file_list
 
     def run_automation(self):
 
-        urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
-
+        # No need to use "get(...)" as we already sanity-check the dictionary
+        # in the base
         source_token = self.config["source_token"]
         source_secret = self.config["source_secret"]
         source_s3_endpoint = self.config["source_s3_endpoint"]
@@ -41,7 +47,7 @@ class RcloneAutomation:
         dest_s3_bucket = self.config["dest_s3_bucket"]
         dest_s3_region = self.config["dest_s3_region"]
 
-        total_files = len(self.file_list)
+        total_files = len(self.files)
 
         rclone_log_file = (
             Path(__file__).parent.joinpath("rclone.log").absolute().as_posix()
@@ -53,10 +59,13 @@ class RcloneAutomation:
         )
         logger.debug(f"rclone conf file :: {rclone_config_file}")
 
+        # TODO: Generate log file at `tempfile`
+        # for each new autoamtion isntance
         if os.path.exists(rclone_log_file):
             os.remove(rclone_log_file)
-            print("Deleting ", rclone_log_file)
+            logger.debug("Deleting ", rclone_log_file)
 
+        # segregate this to another method
         lines = [
             "[s3source]\n",
             "type = s3\n",
@@ -103,7 +112,6 @@ class RcloneAutomation:
         )
         stdout, stderr = process.communicate()
         logger.debug(f"Execution took {time.time()-start} seconds.")
-        # print(stdout, stderr)
 
         start_time_map = {}
         end_time_map = {}
