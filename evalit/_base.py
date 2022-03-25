@@ -6,7 +6,7 @@ import copy
 import random
 from abc import ABC, abstractmethod
 from pathlib import Path
-from typing import Dict, Optional, Sequence
+from typing import Dict, Optional, Sequence, Type
 
 import yaml
 from loguru import logger
@@ -34,7 +34,7 @@ class AbstractAutomation(ABC):
 
     def __init__(
         self,
-        config_yaml: TYPE_PATH,
+        config: Dict[str, str],
         files: Optional[Sequence[TYPE_PATH]] = None,
         debug: bool = False,
     ) -> None:
@@ -44,17 +44,35 @@ class AbstractAutomation(ABC):
         files = files or []
         self.files = tuple(files)
 
-        self.config = self.load_yaml(config_yaml)
+        if not isinstance(config, dict):
+            raise TypeError(
+                f"Invalid type for config. Expected Dict[str, str]. Got {type(config)}"
+            )
+        self.config = copy.deepcopy(config)
         self._sanity_check_config(self.config)
 
-    @abstractmethod
+    @classmethod
+    def from_yaml(
+        cls,
+        cfg_yaml: TYPE_PATH,
+        files: Optional[Sequence[TYPE_PATH]] = None,
+        debug: bool = False,
+    ) -> Type[AbstractAutomation]:
+        """
+        Allows initialization with yaml configuration.
+        """
+        cfg = cls.load_yaml(cfg_yaml)
+        return cls(config=cfg, files=files, debug=debug)
+
+    # @abstractmethod
     def run_automation(self, **kwargs):
         """
         Main method to start transfer
         """
         raise NotImplementedError()
 
-    def load_yaml(self, config_yaml: TYPE_PATH) -> Dict[str, str]:
+    @staticmethod
+    def load_yaml(config_yaml: TYPE_PATH) -> Dict[str, str]:
         """
         Load config from yaml file!
         """
