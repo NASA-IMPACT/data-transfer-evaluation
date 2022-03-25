@@ -3,13 +3,14 @@ import subprocess
 import time
 from datetime import datetime
 from pathlib import Path
-from typing import Dict, Optional, Sequence, Type
+from typing import Dict, Optional, Sequence
 
 import urllib3
-import yaml
-from loguru import logger
 
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+
+from loguru import logger
+
 from .._base import AbstractAutomation
 from ..structures import TYPE_PATH
 

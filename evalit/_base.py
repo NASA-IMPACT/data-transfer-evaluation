@@ -66,7 +66,7 @@ class AbstractAutomation(ABC):
         cfg = cls.load_yaml(cfg_yaml)
         return cls(config=cfg, files=files, debug=debug, kwargs=kwargs)
 
-    # @abstractmethod
+    @abstractmethod
     def run_automation(self, **kwargs):
         """
         Main method to start transfer

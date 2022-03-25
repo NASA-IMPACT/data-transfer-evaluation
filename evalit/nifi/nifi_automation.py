@@ -1,38 +1,56 @@
 import os
 import random
 import string
-import time
 from datetime import datetime
 from pathlib import Path
+from typing import Dict, Optional, Sequence
 
 import requests
 import urllib3
-import yaml
+
+urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+
 from loguru import logger
 
+from .._base import AbstractAutomation
+from ..structures import TYPE_PATH
 
-class NifiAutomation:
-    def __init__(self, config_yaml, file_list, nifi_dir) -> None:
-        with open(config_yaml) as f:
-            # self.config = yaml.load(f)
-            self.config = yaml.safe_load(f)
-            self.nifi_dir = nifi_dir
-            self.file_list = file_list
+
+class NifiAutomation(AbstractAutomation):
+    _RESOURCES_CFG = {
+        "template": "nifi-s3.xml",
+        "log": "logs/nifi-app.log",
+    }
+
+    def __init__(
+        self,
+        config: Dict[str, str],
+        nifi_url: str,
+        nifi_dir: TYPE_PATH,
+        files: Optional[Sequence[TYPE_PATH]] = None,
+        debug: bool = False,
+        **params,
+    ) -> None:
+        super().__init__(config=config, files=files, debug=debug)
+        self.nifi_url = nifi_url
+        self.nifi_dir = nifi_dir
 
     def run_automation(self):
-
-        urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
         random_string = lambda string_length: "".join(
             random.choice(string.ascii_lowercase) for i in range(string_length)
         )
 
-        nifi_url = "https://localhost:8443/nifi-api"
+        # nifi_url = "https://localhost:8443/nifi-api"
+        nifi_url = self.nifi_url
         template_file = (
-            Path(__file__).parent.joinpath("nifi-s3.xml").absolute().as_posix()
+            Path(__file__)
+            .parent.joinpath(self._RESOURCES_CFG["template"])
+            .absolute()
+            .as_posix()
         )
 
-        log_file_location = os.path.join(self.nifi_dir, "logs/nifi-app.log")
+        log_file_location = os.path.join(self.nifi_dir, self._RESOURCES_CFG["log"])
         logger.debug(f"log_file_location = {log_file_location}")
 
         source_token = self.config["source_token"]
@@ -59,7 +77,7 @@ class NifiAutomation:
 
         # Stopping the process group before resetting the template
 
-        print("Stopping process group", process_group_id)
+        logger.info(f"Stopping process group = {process_group_id}")
         update_process_group_json = {
             "id": process_group_id,
             "state": "STOPPED",
@@ -70,7 +88,7 @@ class NifiAutomation:
             json=update_process_group_json,
             verify=False,
         )
-        print("Status", r.status_code)
+        logger.debug(f"Status = {r.status_code}")
 
         # Deleting the existing flow
 
