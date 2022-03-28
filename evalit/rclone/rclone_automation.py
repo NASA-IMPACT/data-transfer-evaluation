@@ -12,6 +12,7 @@ urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 from loguru import logger
 
 from .._base import AbstractAutomation
+from ..misc.shell import ShellExecutor
 from ..structures import TYPE_PATH
 
 
@@ -21,9 +22,15 @@ class RcloneAutomation(AbstractAutomation):
         config: Dict[str, str],
         files: Optional[Sequence[TYPE_PATH]] = None,
         debug: bool = False,
+        shell_executor: Optional[ShellExecutor] = None,
         **params,
     ) -> None:
         super().__init__(config=config, files=files, debug=debug)
+
+        shell_executor = shell_executor or ShellExecutor()
+        assert isinstance(shell_executor, ShellExecutor)
+        self.shell_executor = shell_executor
+
         logger.debug(params)
         self.buffer_size = params.get("buffer_size", 50)
         self.multi_thread_streams = params.get("multi_thread_streams", 10)
@@ -108,10 +115,8 @@ class RcloneAutomation(AbstractAutomation):
 
         logger.debug(" ".join(cmd))
         start = time.time()
-        process = subprocess.Popen(
-            cmd, shell=False, stdout=subprocess.PIPE, stderr=subprocess.PIPE
-        )
-        stdout, stderr = process.communicate()
+
+        exdto = self.shell_executor(cmd)
         logger.debug(f"Execution took {time.time()-start} seconds.")
 
         start_time_map = {}
@@ -123,14 +128,20 @@ class RcloneAutomation(AbstractAutomation):
                     line.find("multipart upload starting chunk 1 size") != -1
                     or line.find("Transferring unconditionally") != -1
                 ):
-                    print(line.split(":")[3].strip(), line.split("DEBUG")[0].strip())
+                    if self.debug:
+                        logger.debug(
+                            line.split(":")[3].strip(), line.split("DEBUG")[0].strip()
+                        )
                     utc_time = datetime.strptime(
                         line.split("DEBUG")[0].strip(), "%Y/%m/%d %H:%M:%S"
                     )
                     start_time_map[line.split(":")[3].strip()] = utc_time
 
                 if line.find("Copied") != -1:
-                    print(line.split(":")[3].strip(), line.split("INFO")[0].strip())
+                    if self.debug:
+                        logger.debug(
+                            line.split(":")[3].strip(), line.split("INFO")[0].strip()
+                        )
                     utc_time = datetime.strptime(
                         line.split("INFO")[0].strip(), "%Y/%m/%d %H:%M:%S"
                     )
@@ -140,7 +151,7 @@ class RcloneAutomation(AbstractAutomation):
 
         for key, start_time in start_time_map.items():
             end_time = end_time_map[key]
-            print(key, (end_time - start_time).total_seconds())
+            logger.debug(f"{key}, {(end_time - start_time).total_seconds()}")
             final_time_array.append(
                 [
                     (start_time - datetime(1970, 1, 1)).total_seconds(),
