@@ -3,7 +3,7 @@ import subprocess
 import time
 from datetime import datetime
 from pathlib import Path
-from typing import Dict, Optional, Sequence
+from typing import Dict, Optional, Sequence, Union
 
 import urllib3
 
@@ -19,7 +19,7 @@ from ..structures import TYPE_PATH
 class RcloneAutomation(AbstractAutomation):
     def __init__(
         self,
-        config: Dict[str, str],
+        config: Union[Dict[str, str], TYPE_PATH],
         files: Optional[Sequence[TYPE_PATH]] = None,
         debug: bool = False,
         shell_executor: Optional[ShellExecutor] = None,

@@ -3,7 +3,7 @@ import random
 import string
 from datetime import datetime
 from pathlib import Path
-from typing import Dict, Optional, Sequence
+from typing import Dict, Optional, Sequence, Union
 
 import requests
 import urllib3
@@ -24,7 +24,7 @@ class NifiAutomation(AbstractAutomation):
 
     def __init__(
         self,
-        config: Dict[str, str],
+        config: Union[Dict[str, str], TYPE_PATH],
         nifi_url: str,
         nifi_dir: TYPE_PATH,
         files: Optional[Sequence[TYPE_PATH]] = None,

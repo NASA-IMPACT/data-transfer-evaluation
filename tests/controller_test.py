@@ -44,7 +44,7 @@ file_list = ["testfile"]  # File list in source bucket
 nifi_installation = "/home/nishan/software/nifi/nifi-1.15.3"
 mft_installation = "/proj/MFT/build"
 
-config_file = "evalit/config.yaml"
+dt_config = "evalit/config.yaml"
 
 ###### Nifi ###########
 # automation = NifiAutomation(config_file, file_list, nifi_installation)
@@ -66,9 +66,10 @@ config_file = "evalit/config.yaml"
 #     s3_max_upload_parts=10,
 #     s3_upload_concurrency=10,
 # )
-automation = RcloneAutomation.from_yaml(
-    config_file,
+automation = RcloneAutomation(
+    dt_config,
     file_list,
+    debug=True,
     buffer_size=512,
     multi_thread_streams=10,
     multi_thread_cutoff=50,
