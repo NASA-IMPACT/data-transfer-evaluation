@@ -71,8 +71,8 @@ class MFTAutomation(AbstractAutomation):
         dest_storage_id = self.config.get("dest_storage_id", None)
         assert source_storage_id and dest_storage_id, "Invalid storage ids!"
 
-        njobs = max(njobs, 0)
-        njobs = min(njobs, multiprocessing.cpu_count())
+        njobs = njobs or multiprocessing.cpu_count()
+        njobs = max(njobs, 1)
         logger.debug(f"njobs = {njobs}")
 
         transfer_ids = Parallel(n_jobs=njobs)(

@@ -15,7 +15,7 @@ from loguru import logger
 @dataclass
 class ExecutionDTO:
     """
-    Holds Shel execution data
+    Holds Shell execution data
     """
 
     cmd: List[str]
