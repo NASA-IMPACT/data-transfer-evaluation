@@ -21,8 +21,8 @@ class RcloneAutomation(AbstractAutomation):
         self,
         config: Union[Dict[str, str], TYPE_PATH],
         files: Optional[Sequence[TYPE_PATH]] = None,
-        debug: bool = False,
         shell_executor: Optional[ShellExecutor] = None,
+        debug: bool = False,
         **params,
     ) -> None:
         super().__init__(config=config, files=files, debug=debug)
