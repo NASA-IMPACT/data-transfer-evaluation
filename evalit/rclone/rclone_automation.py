@@ -3,7 +3,7 @@ import tempfile
 import time
 from datetime import datetime
 from pathlib import Path
-from typing import Dict, Optional, Sequence, TextIO, Union
+from typing import Dict, Optional, Sequence, TextIO, Tuple, Union
 
 import urllib3
 
@@ -13,7 +13,7 @@ from loguru import logger
 
 from .._base import AbstractAutomation
 from ..misc.shell import ShellExecutor
-from ..structures import TYPE_PATH
+from ..structures import TYPE_PATH, TransferDTO
 
 
 class RcloneAutomation(AbstractAutomation):
@@ -75,7 +75,8 @@ class RcloneAutomation(AbstractAutomation):
         ftemp.flush()
         return ftemp
 
-    def run_automation(self):
+    def run_automation(self) -> Tuple[TransferDTO]:
+        start_automation = time.time()
         source_s3_bucket = self.config["source_s3_bucket"]
         source_s3_region = self.config["source_s3_region"]
         dest_s3_bucket = self.config["dest_s3_bucket"]
@@ -119,31 +120,23 @@ class RcloneAutomation(AbstractAutomation):
         logger.info(f"Removing temp config at {rclone_config_file.name}")
         rclone_config_file.close()
 
-        start_time_map, end_time_map = self.parse_log(rclone_log_file, debug=self.debug)
+        # start_time_map, end_time_map = self.parse_log(rclone_log_file, debug=self.debug)
+        vals = self.parse_log(rclone_log_file, debug=self.debug)
+        logger.debug(
+            f"Delta time for {self.__classname__} = {time.time() - start_automation}"
+        )
+        return vals
 
-        final_time_array = []
-
-        for key, start_time in start_time_map.items():
-            end_time = end_time_map[key]
-            logger.debug(f"{key}, {(end_time - start_time).total_seconds()}")
-            final_time_array.append(
-                [
-                    (start_time - datetime(1970, 1, 1)).total_seconds(),
-                    (end_time - datetime(1970, 1, 1)).total_seconds(),
-                ]
-            )
-
-        return final_time_array
-
-    def parse_log(self, log: Union[str, TextIO], debug: bool = False):
+    def parse_log(
+        self, log: Union[str, TextIO], debug: bool = False
+    ) -> Tuple[TransferDTO]:
         # in case it's a path
         if isinstance(log, str):
             log = open(log)
         log.seek(0)
+
         logger.debug(f"Parsing log at {log.name}")
 
-        start_time_map = {}
-        end_time_map = {}
         timekeeper = {}
         for line in log:
             if (
@@ -151,18 +144,24 @@ class RcloneAutomation(AbstractAutomation):
                 or line.find("Transferring unconditionally") != -1
             ):
                 fname = line.split(":")[3].strip()
-                utc_time = datetime.strptime(
+                dto = timekeeper.get(
+                    fname, TransferDTO(fname=fname, transferer="rclone")
+                )
+                dto.start_time = datetime.strptime(
                     line.split("DEBUG")[0].strip(), "%Y/%m/%d %H:%M:%S"
                 )
-                start_time_map[line.split(":")[3].strip()] = utc_time
+                timekeeper[fname] = dto
 
             if line.find("Copied") != -1:
-                utc_time = datetime.strptime(
+                fname = line.split(":")[3].strip()
+                dto = timekeeper.get(
+                    fname, TransferDTO(fname=fname, transferer="rclone")
+                )
+                dto.end_time = datetime.strptime(
                     line.split("INFO")[0].strip(), "%Y/%m/%d %H:%M:%S"
                 )
-                end_time_map[line.split(":")[3].strip()] = utc_time
+                timekeeper[fname] = dto
 
         if debug:
-            logger.debug(f"start times => {start_time_map}")
-            logger.debug(f"end times => {end_time_map}")
-        return start_time_map, end_time_map
+            logger.debug(f"Transfer maps => {timekeeper}")
+        return tuple(timekeeper.values())

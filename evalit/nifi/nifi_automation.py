@@ -5,7 +5,7 @@ import tempfile
 import time
 from datetime import datetime
 from pathlib import Path
-from typing import Dict, Optional, Sequence, Union
+from typing import Dict, Optional, Sequence, Tuple, Union
 
 import requests
 import urllib3
@@ -15,7 +15,7 @@ urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 from loguru import logger
 
 from .._base import AbstractAutomation
-from ..structures import TYPE_PATH
+from ..structures import TYPE_PATH, TransferDTO
 
 
 class NifiAutomation(AbstractAutomation):
@@ -38,6 +38,8 @@ class NifiAutomation(AbstractAutomation):
         self.nifi_dir = nifi_dir
 
     def run_automation(self):
+        start_automation = time.time()
+        logger.info(f"Running automation for {self.__classname__}")
 
         random_string = lambda string_length: "".join(
             random.choice(string.ascii_lowercase) for i in range(string_length)
@@ -366,30 +368,14 @@ class NifiAutomation(AbstractAutomation):
         )
         print("Status", r.status_code)
 
-        start_time_map, end_time_map = self.parse_log(
-            log=log_file_location, session_uuid=session_uuid
+        vals = self.parse_log(log=log_file_location, session_uuid=session_uuid)
+        logger.debug(
+            f"Delta time for {self.__classname__} = {time.time() - start_automation}"
         )
+        return vals
 
-        print("Finalizing Results")
-        final_time_array = []
-
-        for key, start_time in start_time_map.items():
-            if key not in end_time_map:
-                continue
-            end_time = end_time_map[key]
-            print(key, (end_time - start_time).total_seconds())
-            final_time_array.append(
-                [
-                    (start_time - datetime(1970, 1, 1)).total_seconds(),
-                    (end_time - datetime(1970, 1, 1)).total_seconds(),
-                ]
-            )
-
-        return final_time_array
-
-    def parse_log(self, log: str, session_uuid: str):
-        start_time_map = {}
-        end_time_map = {}
+    def parse_log(self, log: str, session_uuid: str) -> Tuple[TransferDTO]:
+        timekeeper = {}
 
         # TODO: Optimize this!
         while 1:
@@ -401,14 +387,18 @@ class NifiAutomation(AbstractAutomation):
                         utc_time = datetime.strptime(
                             line.split(",")[0], "%Y-%m-%d %H:%M:%S"
                         )
-                        file_name = line.split(session_uuid)[1].strip()
-                        startLine = line.split(session_uuid)[0].find("Starting") > -1
-                        if startLine:
-                            start_time_map[file_name] = utc_time
-                        else:
-                            end_time_map[file_name] = utc_time
+                        fname = line.split(session_uuid)[1].strip()
+                        is_start = line.split(session_uuid)[0].find("Starting") > -1
 
-                print(start_time_map)
-                if len(end_time_map) == len(self.files):
+                        dto = timekeeper.get(
+                            fname, TransferDTO(fname=fname, transferer="nifi")
+                        )
+                        if is_start:
+                            dto.start_time = utc_time
+                        else:
+                            dto.end_time = utc_time
+                        timekeeper[fname] = dto
+
+                if len(timekeeper) == len(self.files):
                     break
-        return start_time_map, end_time_map
+        return tuple(timekeeper.values())
