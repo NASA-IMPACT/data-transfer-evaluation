@@ -3,7 +3,7 @@ import tempfile
 import time
 from datetime import datetime
 from pathlib import Path
-from typing import Dict, Optional, Sequence, Union
+from typing import Dict, Optional, Sequence, TextIO, Union
 
 import urllib3
 
@@ -119,33 +119,7 @@ class RcloneAutomation(AbstractAutomation):
         logger.info(f"Removing temp config at {rclone_config_file.name}")
         rclone_config_file.close()
 
-        start_time_map = {}
-        end_time_map = {}
-
-        rclone_log_file.seek(0)
-        for line in rclone_log_file:
-            if (
-                line.find("multipart upload starting chunk 1 size") != -1
-                or line.find("Transferring unconditionally") != -1
-            ):
-                if self.debug:
-                    logger.debug(
-                        line.split(":")[3].strip(), line.split("DEBUG")[0].strip()
-                    )
-                utc_time = datetime.strptime(
-                    line.split("DEBUG")[0].strip(), "%Y/%m/%d %H:%M:%S"
-                )
-                start_time_map[line.split(":")[3].strip()] = utc_time
-
-            if line.find("Copied") != -1:
-                if self.debug:
-                    logger.debug(
-                        line.split(":")[3].strip(), line.split("INFO")[0].strip()
-                    )
-                utc_time = datetime.strptime(
-                    line.split("INFO")[0].strip(), "%Y/%m/%d %H:%M:%S"
-                )
-                end_time_map[line.split(":")[3].strip()] = utc_time
+        start_time_map, end_time_map = self.parse_log(rclone_log_file, debug=self.debug)
 
         final_time_array = []
 
@@ -160,3 +134,35 @@ class RcloneAutomation(AbstractAutomation):
             )
 
         return final_time_array
+
+    def parse_log(self, log: Union[str, TextIO], debug: bool = False):
+        # in case it's a path
+        if isinstance(log, str):
+            log = open(log)
+        log.seek(0)
+        logger.debug(f"Parsing log at {log.name}")
+
+        start_time_map = {}
+        end_time_map = {}
+        timekeeper = {}
+        for line in log:
+            if (
+                line.find("multipart upload starting chunk 1 size") != -1
+                or line.find("Transferring unconditionally") != -1
+            ):
+                fname = line.split(":")[3].strip()
+                utc_time = datetime.strptime(
+                    line.split("DEBUG")[0].strip(), "%Y/%m/%d %H:%M:%S"
+                )
+                start_time_map[line.split(":")[3].strip()] = utc_time
+
+            if line.find("Copied") != -1:
+                utc_time = datetime.strptime(
+                    line.split("INFO")[0].strip(), "%Y/%m/%d %H:%M:%S"
+                )
+                end_time_map[line.split(":")[3].strip()] = utc_time
+
+        if debug:
+            logger.debug(f"start times => {start_time_map}")
+            logger.debug(f"end times => {end_time_map}")
+        return start_time_map, end_time_map
