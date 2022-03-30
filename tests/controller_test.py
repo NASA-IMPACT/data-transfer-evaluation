@@ -16,6 +16,7 @@ import yaml
 # from mft.mft_automation import MFTAutomation
 # from nifi.nifi_automation import NifiAutomation
 print(dir(evalit))
+from evalit.nifi import NifiAutomation
 from evalit.rclone import RcloneAutomation
 
 
@@ -44,16 +45,21 @@ file_list = ["testfile"]  # File list in source bucket
 nifi_installation = "/home/nishan/software/nifi/nifi-1.15.3"
 mft_installation = "/proj/MFT/build"
 
-dt_config = "evalit/config.yaml"
+dt_config = "tests/config.yaml"
 
 ###### Nifi ###########
-# automation = NifiAutomation(config_file, file_list, nifi_installation)
-# nifi_result = automation.run_automation()
-# print("Nifif automation results")
-# print(nifi_result)
+automation = NifiAutomation(
+    config=dt_config,
+    nifi_url="https://localhost:8443/nifi-api",
+    nifi_dir=nifi_installation,
+    files=file_list,
+)
+nifi_result = automation.run_automation()
+print("Nifif automation results")
+print(nifi_result)
 
-# generate_grapgs("nifi", nifi_result)
-# caclulate_throughput(file_sizes, nifi_result)
+generate_grapgs("nifi", nifi_result)
+caclulate_throughput(file_sizes, nifi_result)
 
 ###### Rclone ###########
 # automation = RcloneAutomation(

@@ -1,6 +1,8 @@
 import os
 import random
 import string
+import tempfile
+import time
 from datetime import datetime
 from pathlib import Path
 from typing import Dict, Optional, Sequence, Union
@@ -65,7 +67,7 @@ class NifiAutomation(AbstractAutomation):
         dest_s3_bucket = self.config["dest_s3_bucket"]
         dest_s3_region = self.config["dest_s3_region"]
 
-        total_files = len(self.file_list)
+        total_files = len(self.files)
 
         session_uuid = random_string(10)
         logger.info(f"Session UUID: {session_uuid}")
@@ -364,18 +366,38 @@ class NifiAutomation(AbstractAutomation):
         )
         print("Status", r.status_code)
 
+        start_time_map, end_time_map = self.parse_log(
+            log=log_file_location, session_uuid=session_uuid
+        )
+
+        print("Finalizing Results")
+        final_time_array = []
+
+        for key, start_time in start_time_map.items():
+            if key not in end_time_map:
+                continue
+            end_time = end_time_map[key]
+            print(key, (end_time - start_time).total_seconds())
+            final_time_array.append(
+                [
+                    (start_time - datetime(1970, 1, 1)).total_seconds(),
+                    (end_time - datetime(1970, 1, 1)).total_seconds(),
+                ]
+            )
+
+        return final_time_array
+
+    def parse_log(self, log: str, session_uuid: str):
         start_time_map = {}
         end_time_map = {}
 
-        # Note from Nish:
-        # Need to avoid this infinite loop.
+        # TODO: Optimize this!
         while 1:
-            # time.sleep(5)
+            time.sleep(2)
             # read file line by line
-            with open(log_file_location, "r") as f:
+            with open(log, "r") as f:
                 for line in f:
                     if line.find(session_uuid) != -1:
-                        print(line)
                         utc_time = datetime.strptime(
                             line.split(",")[0], "%Y-%m-%d %H:%M:%S"
                         )
@@ -387,21 +409,6 @@ class NifiAutomation(AbstractAutomation):
                             end_time_map[file_name] = utc_time
 
                 print(start_time_map)
-                if len(end_time_map) == total_files:
+                if len(end_time_map) == len(self.files):
                     break
-
-        final_time_array = []
-
-        print("Finalizing Results")
-
-        for key, start_time in start_time_map.items():
-            end_time = end_time_map[key]
-            print(key, (end_time - start_time).total_seconds())
-            final_time_array.append(
-                [
-                    (start_time - datetime(1970, 1, 1)).total_seconds(),
-                    (end_time - datetime(1970, 1, 1)).total_seconds(),
-                ]
-            )
-
-        return final_time_array
+        return start_time_map, end_time_map
