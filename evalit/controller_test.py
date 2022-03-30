@@ -1,7 +1,6 @@
 # read a yaml file
 import matplotlib.pyplot as plt
 import numpy as np
-import yaml
 from mft.mft_automation import MFTAutomation
 from nifi.nifi_automation import NifiAutomation
 from rclone.rclone_automation import RcloneAutomation
