@@ -15,12 +15,9 @@ from typing import List, Tuple
 # read a yaml file
 import matplotlib.pyplot as plt
 import numpy as np
-import yaml
 from loguru import logger
 
-from evalit.nifi import NifiAutomation
-from evalit.rclone import RcloneAutomation
-from evalit.structures import TransferDTO
+from evalit.api import MFTAutomation, NifiAutomation, RcloneAutomation, TransferDTO
 
 
 def dtotimes_to_times(timesdto: Tuple[TransferDTO]) -> List[List[float]]:
@@ -96,13 +93,18 @@ automation2 = RcloneAutomation(
     s3_upload_concurrency=10,
 )
 
+automation3 = MFTAutomation(
+    config=dt_config,
+    mft_dir=mft_installation,
+    files=file_list,
+)
 
-# automations = [automation2, automation1]
-automations = [automation2]
+automations = [automation2, automation1, automation3]
+# automations = [automation2]
 
 for automation in automations:
     results: Tuple[TransferDTO] = automation.run_automation()
-    logger.info("[{automation.__classname}] Results :: {results}")
+    logger.info(f"[{automation.__classname__}] Results :: {results}")
 
     generate_grapgs(automation.__classname__, results)
     throughput = caclulate_throughput(file_sizes, results)

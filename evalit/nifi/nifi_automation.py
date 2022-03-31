@@ -35,6 +35,8 @@ class NifiAutomation(AbstractAutomation):
     ) -> None:
         super().__init__(config=config, files=files, debug=debug)
         self.nifi_url = nifi_url
+
+        assert os.path.exists(nifi_dir), f"{nifi_dir} path doesn't exist!"
         self.nifi_dir = nifi_dir
 
     def run_automation(self):
@@ -368,18 +370,26 @@ class NifiAutomation(AbstractAutomation):
         )
         print("Status", r.status_code)
 
-        vals = self.parse_log(log=log_file_location, session_uuid=session_uuid)
+        vals = self.parse_log(
+            log=log_file_location,
+            nfiles=len(self.files),
+            session_uuid=session_uuid,
+            poll_wait_time=5,
+        )
         logger.debug(
             f"Delta time for {self.__classname__} = {time.time() - start_automation}"
         )
         return vals
 
-    def parse_log(self, log: str, session_uuid: str) -> Tuple[TransferDTO]:
+    def parse_log(
+        self, log: str, nfiles: int, session_uuid: str, poll_wait_time: int = 5
+    ) -> Tuple[TransferDTO]:
         timekeeper = {}
+        end_counter = 0
 
         # TODO: Optimize this!
-        while 1:
-            time.sleep(2)
+        while (len(timekeeper) < nfiles) and (end_counter < nfiles):
+            time.sleep(poll_wait_time)
             # read file line by line
             with open(log, "r") as f:
                 for line in f:
@@ -397,8 +407,6 @@ class NifiAutomation(AbstractAutomation):
                             dto.start_time = utc_time
                         else:
                             dto.end_time = utc_time
+                            end_counter += 1
                         timekeeper[fname] = dto
-
-                if len(timekeeper) == len(self.files):
-                    break
         return tuple(timekeeper.values())

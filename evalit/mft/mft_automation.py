@@ -1,14 +1,14 @@
 import multiprocessing
 import os
 import time
-from typing import Dict, Optional, Sequence, Union
+from typing import Dict, List, Optional, Sequence, Tuple, Union
 
 from joblib import Parallel, delayed
 from loguru import logger
 
 from .._base import AbstractAutomation
 from ..misc.shell import ShellExecutor
-from ..structures import TYPE_PATH
+from ..structures import TYPE_PATH, TransferDTO
 
 
 class MFTAutomation(AbstractAutomation):
@@ -66,10 +66,15 @@ class MFTAutomation(AbstractAutomation):
 
         return transfer_id
 
-    def run_automation(self, njobs: int = 4):
+    def run_automation(self, njobs: int = 4) -> Tuple[TransferDTO]:
         source_storage_id = self.config.get("source_storage_id", None)
         dest_storage_id = self.config.get("dest_storage_id", None)
-        assert source_storage_id and dest_storage_id, "Invalid storage ids!"
+        logger.debug(f"Source storage id = {source_storage_id}")
+        logger.debug(f"Dest storage id = {dest_storage_id}")
+
+        assert (
+            source_storage_id and dest_storage_id
+        ), "Invalid storage ids! Are you sure you have 'source_storage_id' and 'dest_storage_id' in the config?"
 
         njobs = njobs or multiprocessing.cpu_count()
         njobs = max(njobs, 1)
@@ -79,14 +84,18 @@ class MFTAutomation(AbstractAutomation):
             delayed(self.submit_transfer)(fname, source_storage_id, dest_storage_id)
             for fname in self.files
         )
+        return self.parse_log(transfer_ids=transfer_ids, poll_wait_time=5)
 
-        start_time_map = {}
-        end_time_map = {}
+    def parse_log(
+        self, transfer_ids: List[str], poll_wait_time: int = 5
+    ) -> Tuple[TransferDTO]:
+        nids = len(transfer_ids)
 
-        # TODO: Optimize this!
-        while 1:
+        timekeeper = {}
+        end_counter = 0
+        while (len(timekeeper) < nids) and (end_counter < nids):
             # Note: Why?
-            time.sleep(5)
+            time.sleep(poll_wait_time)
 
             for transfer_id in transfer_ids:
                 cmd = [
@@ -102,25 +111,19 @@ class MFTAutomation(AbstractAutomation):
 
                 for part in exdto.output:
                     if part.find("STARTING") != -1:
-                        start_time = part.split("|")[1].strip()
-                        start_time_map[transfer_id] = int(start_time) / 1000
-                        logger.debug("Start time: ", start_time)
+                        dto = timekeeper.get(
+                            transfer_id,
+                            TransferDTO(fname=transfer_id, transferer="mft"),
+                        )
+                        dto.start_time = int(part.split("|")[1].strip()) / 1000
+                        timekeeper[transfer_id] = dto
 
                     if part.find("COMPLETED") != -1:
-                        end_time = part.split("|")[1].strip()
-                        end_time_map[transfer_id] = int(end_time) / 1000
-                        logger.debug("End time: ", end_time)
-
-            if len(start_time_map) == len(transfer_ids) and len(end_time_map) == len(
-                transfer_ids
-            ):
-                break
-
-        final_time_array = []
-
-        for key, start_time in start_time_map.items():
-            end_time = end_time_map[key]
-            print(key, end_time - start_time)
-            final_time_array.append([start_time, end_time])
-
-        return final_time_array
+                        dto = timekeeper.get(
+                            transfer_id,
+                            TransferDTO(fname=transfer_id, transferer="mft"),
+                        )
+                        dto.end_time = int(part.split("|")[1].strip()) / 1000
+                        timekeeper[transfer_id] = dto
+                        end_counter += 1
+        return tuple(timekeeper.values())
