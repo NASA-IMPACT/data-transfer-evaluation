@@ -13,7 +13,7 @@ except ModuleNotFoundError:
     logger.warning("matplotlib not found!")
 
 
-from ._base import AbstractAutomation, AbstractController
+from ._base import AbstractController
 from .structures import TransferDTO
 
 
@@ -26,7 +26,7 @@ class StandardAutomationController(AbstractController):
         file_sizes = tuple(map(lambda x: x[0], file_vals))
 
         for automation in self.automations:
-            results: Tuple[TransferDTO] = automation.run_automation()
+            results: Tuple[TransferDTO] = automation.run_automation(**kwargs)
             logger.info(f"[{automation.__classname__}] Results :: {results}")
 
             results = tuple(
