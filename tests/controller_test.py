@@ -32,11 +32,7 @@ def dtotimes_to_times(timesdto: Tuple[TransferDTO]) -> List[List[float]]:
 
 
 def generate_grapgs(title: str, timesdto: Tuple[TransferDTO]):
-    times = filter(
-        lambda t: t.start_time is not None and t.end_time is not None, timesdto
-    )
-    times = tuple(times)
-    times = dtotimes_to_times(times)
+    times = dtotimes_to_times(timesdto)
 
     for i in range(len(times)):
         plt.barh(i + 1, times[i][1] - times[i][0], left=times[i][0])
@@ -45,16 +41,13 @@ def generate_grapgs(title: str, timesdto: Tuple[TransferDTO]):
 
 
 def caclulate_throughput(file_sizes: List[int], timesdto: Tuple[TransferDTO]) -> float:
-    timesdto = filter(
-        lambda t: t.start_time is not None and t.end_time is not None, timesdto
-    )
     times = dtotimes_to_times(timesdto)
-    total_valume = 0.0
+    total_volume = 0.0
     for i in range(len(file_sizes)):
-        total_valume += file_sizes[i]
+        total_volume += file_sizes[i]
     val = 0
     try:
-        val = total_valume * 8 / (np.max(times) - np.min(times))
+        val = total_volume * 8 / (np.max(times) - np.min(times))
     except ZeroDivisionError:
         logger.error("Error while computing throughput!")
         val = 0
@@ -65,11 +58,8 @@ def caclulate_throughput(file_sizes: List[int], timesdto: Tuple[TransferDTO]) ->
 file_sizes = [1]  # GB
 file_list = ["testfile"]  # File list in source bucket
 
-# nifi_installation = "/sproj/MFT/nifi-1.15.3"
-nifi_installation = os.getenv(
-    "NIFI_INSTALLATION", "/home/nishan/software/nifi/nifi-1.15.3"
-)
-mft_installation = os.getenv("MFT_INSTALLATION", "/proj/MFT/build")
+nifi_installation = os.getenv("NIFI_INSTALLATION")
+mft_installation = os.getenv("MFT_INSTALLATION")
 
 dt_config = os.getenv("CFG_YAML", "tests/config.yaml")
 
@@ -100,10 +90,13 @@ automation3 = MFTAutomation(
 )
 
 automations = [automation2, automation1, automation3]
-# automations = [automation2]
+automations = [automation2]
 
 for automation in automations:
     results: Tuple[TransferDTO] = automation.run_automation()
+    results = tuple(
+        filter(lambda t: t.start_time is not None and t.end_time is not None, results)
+    )
     logger.info(f"[{automation.__classname__}] Results :: {results}")
 
     generate_grapgs(automation.__classname__, results)
