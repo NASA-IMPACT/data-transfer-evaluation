@@ -66,7 +66,7 @@ class MFTAutomation(AbstractAutomation):
 
         return transfer_id
 
-    def run_automation(self, njobs: int = 4) -> Tuple[TransferDTO]:
+    def run_automation(self, njobs: int = 4, **kwargs) -> Tuple[TransferDTO]:
         source_storage_id = self.config.get("source_storage_id", None)
         dest_storage_id = self.config.get("dest_storage_id", None)
         logger.debug(f"Source storage id = {source_storage_id}")

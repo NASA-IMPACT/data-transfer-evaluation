@@ -75,7 +75,7 @@ class RcloneAutomation(AbstractAutomation):
         ftemp.flush()
         return ftemp
 
-    def run_automation(self) -> Tuple[TransferDTO]:
+    def run_automation(self, **kwargs) -> Tuple[TransferDTO]:
         start_automation = time.time()
         source_s3_bucket = self.config["source_s3_bucket"]
         source_s3_region = self.config["source_s3_region"]

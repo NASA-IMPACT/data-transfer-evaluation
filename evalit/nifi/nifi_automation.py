@@ -39,7 +39,7 @@ class NifiAutomation(AbstractAutomation):
         assert os.path.exists(nifi_dir), f"{nifi_dir} path doesn't exist!"
         self.nifi_dir = nifi_dir
 
-    def run_automation(self):
+    def run_automation(self, **kwargs):
         start_automation = time.time()
         logger.info(f"Running automation for {self.__classname__}")
 
