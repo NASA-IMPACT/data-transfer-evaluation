@@ -1,9 +1,9 @@
 import os
-import subprocess
+import tempfile
 import time
 from datetime import datetime
 from pathlib import Path
-from typing import Dict, Optional, Sequence, Union
+from typing import Dict, Optional, Sequence, TextIO, Tuple, Union
 
 import urllib3
 
@@ -13,7 +13,7 @@ from loguru import logger
 
 from .._base import AbstractAutomation
 from ..misc.shell import ShellExecutor
-from ..structures import TYPE_PATH
+from ..structures import TYPE_PATH, TransferDTO
 
 
 class RcloneAutomation(AbstractAutomation):
@@ -39,39 +39,14 @@ class RcloneAutomation(AbstractAutomation):
         self.s3_max_upload_parts = params.get("s3_max_upload_parts", 10)
         self.s3_upload_concurrency = params.get("s3_upload_concurrency", 10)
 
-    def run_automation(self):
-
-        # No need to use "get(...)" as we already sanity-check the dictionary
-        # in the base
+    def _generate_rclone_cfg(self) -> tempfile.NamedTemporaryFile:
         source_token = self.config["source_token"]
         source_secret = self.config["source_secret"]
         source_s3_endpoint = self.config["source_s3_endpoint"]
-        source_s3_bucket = self.config["source_s3_bucket"]
-        source_s3_region = self.config["source_s3_region"]
 
         dest_token = self.config["dest_token"]
         dest_secret = self.config["dest_secret"]
         dest_s3_endpoint = self.config["dest_s3_endpoint"]
-        dest_s3_bucket = self.config["dest_s3_bucket"]
-        dest_s3_region = self.config["dest_s3_region"]
-
-        total_files = len(self.files)
-
-        rclone_log_file = (
-            Path(__file__).parent.joinpath("rclone.log").absolute().as_posix()
-        )
-        logger.debug(f"rclone log file :: {rclone_log_file}")
-
-        rclone_config_file = (
-            Path(__file__).parent.joinpath("rclone.conf").absolute().as_posix()
-        )
-        logger.debug(f"rclone conf file :: {rclone_config_file}")
-
-        # TODO: Generate log file at `tempfile`
-        # for each new autoamtion isntance
-        if os.path.exists(rclone_log_file):
-            os.remove(rclone_log_file)
-            logger.debug("Deleting ", rclone_log_file)
 
         # segregate this to another method
         lines = [
@@ -92,8 +67,32 @@ class RcloneAutomation(AbstractAutomation):
             "acl = authenticated-read\n" "\n",
         ]
 
-        with open(rclone_config_file, "w") as f:
-            f.writelines(lines)
+        # We don't use context manager here as it will auto-delete the file
+        # Or we have to manually delete the file even after closing the
+        # file pointer
+        ftemp = tempfile.NamedTemporaryFile(mode="w", suffix=".conf", prefix="rclone_")
+        ftemp.writelines(lines)
+        ftemp.flush()
+        return ftemp
+
+    def run_automation(self) -> Tuple[TransferDTO]:
+        start_automation = time.time()
+        source_s3_bucket = self.config["source_s3_bucket"]
+        source_s3_region = self.config["source_s3_region"]
+        dest_s3_bucket = self.config["dest_s3_bucket"]
+        dest_s3_region = self.config["dest_s3_region"]
+
+        total_files = len(self.files)
+
+        # temp files
+        rclone_log_file = tempfile.NamedTemporaryFile(
+            mode="w+", prefix="rclone_", suffix=".log", delete=False
+        )
+        logger.debug(f"rclone log file :: {rclone_log_file.name}")
+
+        rclone_config_file = self._generate_rclone_cfg()
+        assert rclone_config_file is not None
+        logger.debug(f"rclone conf file :: {rclone_config_file.name}")
 
         cmd = [
             "rclone",
@@ -107,56 +106,62 @@ class RcloneAutomation(AbstractAutomation):
             f"--buffer-size={self.buffer_size}M",
             f"--transfers={self.ntransfers}",
             "--progress",
-            f"--config={rclone_config_file}",
-            f"--log-file={rclone_log_file}",
+            f"--config={rclone_config_file.name}",
+            f"--log-file={rclone_log_file.name}",
             "--log-level=DEBUG",
             "-I",
         ]
 
-        logger.debug(" ".join(cmd))
         start = time.time()
-
         exdto = self.shell_executor(cmd)
         logger.debug(f"Execution took {time.time()-start} seconds.")
 
-        start_time_map = {}
-        end_time_map = {}
+        # this deletes the temp file also
+        logger.info(f"Removing temp config at {rclone_config_file.name}")
+        rclone_config_file.close()
 
-        with open(rclone_log_file, "r") as f:
-            for line in f:
-                if (
-                    line.find("multipart upload starting chunk 1 size") != -1
-                    or line.find("Transferring unconditionally") != -1
-                ):
-                    if self.debug:
-                        logger.debug(
-                            line.split(":")[3].strip(), line.split("DEBUG")[0].strip()
-                        )
-                    utc_time = datetime.strptime(
-                        line.split("DEBUG")[0].strip(), "%Y/%m/%d %H:%M:%S"
-                    )
-                    start_time_map[line.split(":")[3].strip()] = utc_time
+        # start_time_map, end_time_map = self.parse_log(rclone_log_file, debug=self.debug)
+        vals = self.parse_log(rclone_log_file, debug=self.debug)
+        logger.debug(
+            f"Delta time for {self.__classname__} = {time.time() - start_automation}"
+        )
+        return vals
 
-                if line.find("Copied") != -1:
-                    if self.debug:
-                        logger.debug(
-                            line.split(":")[3].strip(), line.split("INFO")[0].strip()
-                        )
-                    utc_time = datetime.strptime(
-                        line.split("INFO")[0].strip(), "%Y/%m/%d %H:%M:%S"
-                    )
-                    end_time_map[line.split(":")[3].strip()] = utc_time
+    def parse_log(
+        self, log: Union[str, TextIO], debug: bool = False
+    ) -> Tuple[TransferDTO]:
+        # in case it's a path
+        if isinstance(log, str):
+            log = open(log)
+        log.seek(0)
 
-        final_time_array = []
+        logger.debug(f"Parsing log at {log.name}")
 
-        for key, start_time in start_time_map.items():
-            end_time = end_time_map[key]
-            logger.debug(f"{key}, {(end_time - start_time).total_seconds()}")
-            final_time_array.append(
-                [
-                    (start_time - datetime(1970, 1, 1)).total_seconds(),
-                    (end_time - datetime(1970, 1, 1)).total_seconds(),
-                ]
-            )
+        timekeeper = {}
+        for line in log:
+            if (
+                line.find("multipart upload starting chunk 1 size") != -1
+                or line.find("Transferring unconditionally") != -1
+            ):
+                fname = line.split(":")[3].strip()
+                dto = timekeeper.get(
+                    fname, TransferDTO(fname=fname, transferer="rclone")
+                )
+                dto.start_time = datetime.strptime(
+                    line.split("DEBUG")[0].strip(), "%Y/%m/%d %H:%M:%S"
+                )
+                timekeeper[fname] = dto
 
-        return final_time_array
+            if line.find("Copied") != -1:
+                fname = line.split(":")[3].strip()
+                dto = timekeeper.get(
+                    fname, TransferDTO(fname=fname, transferer="rclone")
+                )
+                dto.end_time = datetime.strptime(
+                    line.split("INFO")[0].strip(), "%Y/%m/%d %H:%M:%S"
+                )
+                timekeeper[fname] = dto
+
+        if debug:
+            logger.debug(f"Transfer maps => {timekeeper}")
+        return tuple(timekeeper.values())

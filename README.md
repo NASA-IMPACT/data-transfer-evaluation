@@ -1,6 +1,18 @@
+A tool-agnostic data transfer evaluation framework.
+
 ## Installation Steps
 
-### System Requirements
+```bash
+python setup.py install
+```
+
+or
+
+```bash
+pip install -e .
+```
+
+## System Requirements
 * Linux or Mac OS
 * Java 11 or higher
 * Python 3.6 or higher
@@ -23,10 +35,6 @@
 * Start Airavata MFT by running ```./start_mft.sh```
 * After tests are completed, run ```./stop_mft.sh && ./stop_consul.sh``` to stop MFT services
 
-### Updating configurations in controller.py
+### Examples and usages
 
-* Update the controller.py with the installation paths of Nifi and Airavata MFT
-
-### Additional library installations
-
-```pip3 install joblib```
+See `tests/` directory for examples.
