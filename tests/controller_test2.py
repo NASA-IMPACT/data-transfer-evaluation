@@ -22,13 +22,11 @@ mft_installation = os.getenv("MFT_INSTALLATION")
 dt_config = os.getenv("CFG_YAML", "tests/config.yaml")
 dt_config = RcloneAutomation.load_yaml(dt_config)
 
-# value is a tuple, first item is size in GB
-
 filemap = StandardAutomationController.get_source_file_map(dt_config)
 filenames = tuple(filemap.keys())
 logger.debug(filemap)
 
-###### Nifi ###########
+# build controller with available automation components
 controller = (
     StandardAutomationController(debug=True)
     .add_automation(
