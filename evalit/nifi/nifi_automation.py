@@ -23,6 +23,8 @@ class NifiAutomation(AbstractAutomation):
         "template": "nifi-s3.xml",
         "log": "logs/nifi-app.log",
     }
+    _LOG_START_PHRASE = "Starting the data transfer"
+    _LOG_COMPLETE_PHRASE = "Completed the transfer"
 
     def __init__(
         self,
@@ -303,7 +305,7 @@ class NifiAutomation(AbstractAutomation):
                     "runDurationMillis": 0,
                     "autoTerminatedRelationships": ["success"],
                     "properties": {
-                        "log-message": "Starting the data transfer "
+                        "log-message": f"{self._LOG_START_PHRASE} "
                         + session_uuid
                         + " ${filename}"
                     },
@@ -338,7 +340,7 @@ class NifiAutomation(AbstractAutomation):
                     "runDurationMillis": 0,
                     "autoTerminatedRelationships": ["success"],
                     "properties": {
-                        "log-message": "Completed the transfer "
+                        "log-message": f"{self._LOG_COMPLETE_PHRASE} "
                         + session_uuid
                         + " ${filename}"
                     },
@@ -387,25 +389,37 @@ class NifiAutomation(AbstractAutomation):
         timekeeper = {}
         end_counter = 0
 
-        # TODO: Optimize this!
-        while (len(timekeeper) < nfiles) and (end_counter < nfiles):
+        # We need to poll the logging
+        while end_counter < nfiles:
+            logger.debug(
+                f"[{self.__classname__}] log parser polling... {end_counter}/{nfiles} files transferred!"
+            )
             time.sleep(poll_wait_time)
             # read file line by line
             with open(log, "r") as f:
+                # reset counter
+                end_counter = 0
                 for line in f:
                     if line.find(session_uuid) != -1:
                         utc_time = datetime.strptime(
                             line.split(",")[0], "%Y-%m-%d %H:%M:%S"
                         )
                         fname = line.split(session_uuid)[1].strip()
-                        is_start = line.split(session_uuid)[0].find("Starting") > -1
+                        is_start = (
+                            line.split(session_uuid)[0].find(self._LOG_START_PHRASE)
+                            > -1
+                        )
+                        is_complete = (
+                            line.split(session_uuid)[0].find(self._LOG_COMPLETE_PHRASE)
+                            > -1
+                        )
 
                         dto = timekeeper.get(
                             fname, TransferDTO(fname=fname, transferer="nifi")
                         )
                         if is_start:
                             dto.start_time = utc_time
-                        else:
+                        if is_complete:
                             dto.end_time = utc_time
                             end_counter += 1
                         timekeeper[fname] = dto
