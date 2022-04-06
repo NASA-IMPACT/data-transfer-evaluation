@@ -1,3 +1,4 @@
+import time
 from datetime import datetime
 from typing import List, Tuple
 
@@ -33,6 +34,7 @@ class StandardAutomationController(AbstractController):
         It abstracts all the transfers and computation.
         """
         logger.info("Controller has started...")
+        controller_start = time.time()
 
         filemap = kwargs.get("filemap", {})
         logger.debug(f"Total files in filemap => {len(filemap)}")
@@ -42,18 +44,41 @@ class StandardAutomationController(AbstractController):
 
         for automation in self.automations:
             results: Tuple[TransferDTO] = automation.run_automation(**kwargs)
-            logger.info(f"[{automation.__classname__}] Results :: {results}")
-
             results = tuple(
                 filter(
-                    lambda t: t.start_time is not None and t.end_time is not None,
+                    lambda r: r.start_time is not None and r.end_time is not None,
                     results,
                 )
             )
+            if self.debug:
+                logger.info(f"[{automation.__classname__}] Results :: {results}")
 
-            throughput = self.caclulate_throughput(file_sizes, results)
+            # filter results based on filemap
+            results_filemapped = tuple(filter(lambda r: r.fname in filemap, results))
+
+            # in some automation (like MFT), fname are temp ids returned by
+            # the transfer. So, in that case, no file matches.
+            results_filemapped = (
+                results if not results_filemapped else results_filemapped
+            )
+
+            file_sizes_filemapped = tuple(
+                map(lambda r: filemap[r.fname]["size"], results_filemapped)
+            )
+            file_sizes_filemapped = (
+                file_sizes if not file_sizes_filemapped else file_sizes_filemapped
+            )
+
+            throughput = self.caclulate_throughput(
+                file_sizes_filemapped, results_filemapped
+            )
             logger.info(f"[{automation.__classname__}] Throughput = {throughput}")
+
             self.generate_grapgs(automation.__classname__, results)
+
+        logger.info(
+            f"Controller took total {time.time()-controller_start} seconds to run!"
+        )
 
     def generate_grapgs(self, title: str, timesdto: Tuple[TransferDTO]):
         if not MATPLOTLIB:
@@ -75,7 +100,7 @@ class StandardAutomationController(AbstractController):
         total_volume = sum(file_sizes)
         val = 0
         try:
-            val = total_volume * 8 / (np.max(times) - np.min(times))
+            val = total_volume * 8 / (float(np.max(times)) - float(np.min(times)))
         except ZeroDivisionError:
             logger.error("Error while computing throughput!")
             val = 0

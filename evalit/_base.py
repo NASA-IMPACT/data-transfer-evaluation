@@ -155,11 +155,14 @@ class AbstractController(ABC):
     """
 
     def __init__(
-        self, automations: Optional[Tuple[Type[AbstractAutomation]]] = None
+        self,
+        automations: Optional[Tuple[Type[AbstractAutomation]]] = None,
+        debug: bool = False,
     ) -> None:
         automations = automations or tuple()
         self.sanity_check_automations(automations)
         self.automations = automations
+        self.debug = bool(debug)
 
     @abstractmethod
     def run(self, **kwargs) -> Any:

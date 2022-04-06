@@ -30,12 +30,12 @@ logger.debug(filemap)
 
 ###### Nifi ###########
 controller = (
-    StandardAutomationController()
+    StandardAutomationController(debug=True)
     .add_automation(
         RcloneAutomation(
             dt_config,
             filenames,
-            debug=True,
+            debug=False,
             buffer_size=512,
             multi_thread_streams=10,
             multi_thread_cutoff=50,
