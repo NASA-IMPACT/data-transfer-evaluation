@@ -15,6 +15,21 @@ from .structures import TYPE_PATH, TransferDTO
 
 
 class AbstractAutomation(ABC):
+    """
+    This is the Abstract Base Class that represents any automation component.
+
+    The automation component works by using configuration for
+    source s3 and destination s3 buckets.
+
+    Some of the implementation are:
+        - `rclone.rclone_automation.RcloneAutomation`
+        - `nifi.nifi_automation.NifiAutomation`
+        - `mft.mft_automation.MFTAutomation`
+
+    Each automation component should implement `rclone_automation` method
+    and must return `Tuple[TransferDTO]` data structure.
+    """
+
     _CFG_KEYS = {
         "src": [
             "source_token",
@@ -39,6 +54,18 @@ class AbstractAutomation(ABC):
         debug: bool = False,
         **kwargs,
     ) -> None:
+        """
+        Args:
+            `config`: `str` or `pathlib.Path` or `dict`
+                Represents the yaml config for source and destination.
+                If `str` or `pathlib.Path`, yaml path has to be provided.
+
+            `files`: `List[str]`
+                List of filenames for transfer
+
+            debug: `bool`
+                Flag to represent debugging mode.
+        """
         assert isinstance(debug, bool)
         self.debug = bool(debug)
 
@@ -97,6 +124,10 @@ class AbstractAutomation(ABC):
         return self.__class__.__name__
 
     def __get_redacted_cfg(self) -> Dict[str, str]:
+        """
+        Returns the stored config in redacted form.
+        """
+
         def _redact_string(text, nchars=7):
             n = len(text)
             nchars = nchars or 0
@@ -133,6 +164,46 @@ class AbstractController(ABC):
     @abstractmethod
     def run(self, **kwargs) -> Any:
         raise NotImplementedError()
+
+    @staticmethod
+    def get_source_file_map(cfg: TYPE_PATH) -> Dict[str, dict]:
+        """
+        A helper method to get all the available files in the source.
+
+        Returns:
+            A dictionary mapping from filename to file metadata.
+            The `size` metadata is in GB (GigaBytes).
+
+            Example:
+
+                .. code-block:: python
+
+                    {"testfile": {"size": 0.9}}
+
+
+
+        """
+        if isinstance(cfg, str):
+            cfg = AbstractAutomation.load_yaml(cfg)
+
+        # importing at runtime, as it's not a necessity to use this function
+        import boto3
+
+        logger.debug(f"Boto3 version: {boto3.__version__}")
+
+        s3_client = boto3.client(
+            "s3",
+            aws_access_key_id=cfg["source_token"],
+            aws_secret_access_key=cfg["source_secret"],
+            endpoint_url=cfg["source_s3_endpoint"],
+        )
+        response_contents = s3_client.list_objects_v2(
+            Bucket=cfg["source_s3_bucket"]
+        ).get("Contents")
+        return {
+            val["Key"]: dict(size=val["Size"] / (1024 * 1024 * 1024))
+            for val in response_contents
+        }
 
     def sanity_check_automations(
         self, automations: Tuple[Type[AbstractAutomation]]

@@ -1,13 +1,15 @@
 import os
 import sys
 
+import boto3
+
 sys.path.append("./")
 sys.path.append("../evalit/")
 sys.path.append("./evalit/")
 
 import evalit
 
-print(evalit.__version__)
+print(f"automation pkg version: {evalit.__version__}")
 
 from loguru import logger
 
@@ -18,10 +20,13 @@ nifi_installation = os.getenv("NIFI_INSTALLATION")
 mft_installation = os.getenv("MFT_INSTALLATION")
 
 dt_config = os.getenv("CFG_YAML", "tests/config.yaml")
+dt_config = RcloneAutomation.load_yaml(dt_config)
 
 # value is a tuple, first item is size in GB
-filemap = {"testfile": (1,)}
+
+filemap = StandardAutomationController.get_source_file_map(dt_config)
 filenames = tuple(filemap.keys())
+logger.debug(filemap)
 
 ###### Nifi ###########
 controller = (
@@ -47,13 +52,13 @@ controller = (
             files=filenames,
         )
     )
-    .add_automation(
-        MFTAutomation(
-            config=dt_config,
-            mft_dir=mft_installation,
-            files=filenames,
-        )
-    )
+    # .add_automation(
+    #     MFTAutomation(
+    #         config=dt_config,
+    #         mft_dir=mft_installation,
+    #         files=filenames,
+    #     )
+    # )
 )
 print(controller)
 controller.run(filemap=filemap)

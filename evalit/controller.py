@@ -18,12 +18,27 @@ from .structures import TransferDTO
 
 
 class StandardAutomationController(AbstractController):
-    def run(self, **kwargs):
+    """
+    This is a standard implementation of the Automation Controller.
+    The run method:
+        - takes in filemap through kwargs
+        - runs all the available automation (Type[AbstractAutomation])
+        - computes throughput for each
+        - generate bar graph
+    """
+
+    def run(self, **kwargs) -> None:
+        """
+        This is the main entrypoint to the controller.
+        It abstracts all the transfers and computation.
+        """
         logger.info("Controller has started...")
 
         filemap = kwargs.get("filemap", {})
-        file_vals = tuple(filemap.values())
-        file_sizes = tuple(map(lambda x: x[0], file_vals))
+        logger.debug(f"Total files in filemap => {len(filemap)}")
+
+        file_sizes = tuple(map(lambda x: x["size"], filemap.values()))
+        logger.debug(f"Total size of all file blobs => {(sum(file_sizes))}")
 
         for automation in self.automations:
             results: Tuple[TransferDTO] = automation.run_automation(**kwargs)
@@ -64,7 +79,7 @@ class StandardAutomationController(AbstractController):
         except ZeroDivisionError:
             logger.error("Error while computing throughput!")
             val = 0
-        return val
+        return round(val, 3)
 
     @staticmethod
     def dtotimes_to_times(timesdto: Tuple[TransferDTO]) -> List[List[float]]:
