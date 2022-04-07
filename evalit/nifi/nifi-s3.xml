@@ -211,7 +211,7 @@
             <config>
                 <bulletinLevel>WARN</bulletinLevel>
                 <comments></comments>
-                <concurrentlySchedulableTaskCount>1</concurrentlySchedulableTaskCount>
+                <concurrentlySchedulableTaskCount>10</concurrentlySchedulableTaskCount>
                 <descriptors>
                     <entry>
                         <key>Bucket</key>
@@ -556,7 +556,7 @@
             <config>
                 <bulletinLevel>WARN</bulletinLevel>
                 <comments></comments>
-                <concurrentlySchedulableTaskCount>1</concurrentlySchedulableTaskCount>
+                <concurrentlySchedulableTaskCount>10</concurrentlySchedulableTaskCount>
                 <descriptors>
                     <entry>
                         <key>Bucket</key>
@@ -865,7 +865,7 @@
             <config>
                 <bulletinLevel>WARN</bulletinLevel>
                 <comments></comments>
-                <concurrentlySchedulableTaskCount>1</concurrentlySchedulableTaskCount>
+                <concurrentlySchedulableTaskCount>10</concurrentlySchedulableTaskCount>
                 <descriptors>
                     <entry>
                         <key>Object Key</key>
