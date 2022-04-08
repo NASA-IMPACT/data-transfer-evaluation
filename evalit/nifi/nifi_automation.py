@@ -217,7 +217,7 @@ class NifiAutomation(AbstractAutomation):
                 "id": fetch_s3_processor["id"],
                 "name": "FetchS3Object",
                 "config": {
-                    "concurrentlySchedulableTaskCount": "1",
+                    "concurrentlySchedulableTaskCount": "10",
                     "schedulingPeriod": "0 sec",
                     "executionNode": "ALL",
                     "penaltyDuration": "30 sec",
@@ -255,7 +255,7 @@ class NifiAutomation(AbstractAutomation):
                 "id": put_s3_processor["id"],
                 "name": "PutS3Object",
                 "config": {
-                    "concurrentlySchedulableTaskCount": "1",
+                    "concurrentlySchedulableTaskCount": "10",
                     "schedulingPeriod": "0 sec",
                     "executionNode": "ALL",
                     "penaltyDuration": "30 sec",
