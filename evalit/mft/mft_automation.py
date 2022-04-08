@@ -84,7 +84,10 @@ class MFTAutomation(AbstractAutomation):
             delayed(self.submit_transfer)(fname, source_storage_id, dest_storage_id)
             for fname in self.files
         )
-        return self.parse_log(transfer_ids=transfer_ids, poll_wait_time=5)
+        return self.parse_log(
+            transfer_ids=transfer_ids,
+            poll_wait_time=kwargs.get("mft_log_poll_time", 5) or 5,
+        )
 
     def parse_log(
         self, transfer_ids: List[str], poll_wait_time: int = 5
@@ -94,7 +97,8 @@ class MFTAutomation(AbstractAutomation):
         timekeeper = {}
         end_counter = 0
         while (len(timekeeper) < nids) and (end_counter < nids):
-            # Note: Why?
+            # reset counter
+            end_counter = 0
             time.sleep(poll_wait_time)
 
             for transfer_id in transfer_ids:

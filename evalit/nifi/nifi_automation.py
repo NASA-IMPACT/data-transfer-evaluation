@@ -32,6 +32,7 @@ class NifiAutomation(AbstractAutomation):
         nifi_url: str,
         nifi_dir: TYPE_PATH,
         files: Optional[Sequence[TYPE_PATH]] = None,
+        xml_conf: Optional[str] = None,
         debug: bool = False,
         **params,
     ) -> None:
@@ -40,6 +41,10 @@ class NifiAutomation(AbstractAutomation):
 
         assert os.path.exists(nifi_dir), f"{nifi_dir} path doesn't exist!"
         self.nifi_dir = nifi_dir
+
+        if xml_conf is not None:
+            assert os.path.exists(xml_conf), f"{xml_conf} path doesn't exist!"
+        self.xml_conf = xml_conf
 
     def run_automation(self, **kwargs):
         start_automation = time.time()
@@ -51,12 +56,13 @@ class NifiAutomation(AbstractAutomation):
 
         # nifi_url = "https://localhost:8443/nifi-api"
         nifi_url = self.nifi_url
-        template_file = (
+        template_file = self.xml_conf or (
             Path(__file__)
             .parent.joinpath(self._RESOURCES_CFG["template"])
             .absolute()
             .as_posix()
         )
+        logger.debug(f"Using template: {template_file}")
 
         log_file_location = os.path.join(self.nifi_dir, self._RESOURCES_CFG["log"])
         logger.debug(f"log_file_location = {log_file_location}")
@@ -376,7 +382,7 @@ class NifiAutomation(AbstractAutomation):
             log=log_file_location,
             nfiles=len(self.files),
             session_uuid=session_uuid,
-            poll_wait_time=5,
+            poll_wait_time=kwargs.get("nifi_log_poll_time", 5) or 5,
         )
         logger.debug(
             f"Delta time for {self.__classname__} = {time.time() - start_automation}"

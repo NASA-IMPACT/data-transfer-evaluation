@@ -28,7 +28,7 @@ logger.debug(filemap)
 
 # build controller with available automation components
 controller = (
-    StandardAutomationController(debug=True)
+    StandardAutomationController(debug=False)
     .add_automation(
         RcloneAutomation(
             dt_config,
@@ -48,6 +48,7 @@ controller = (
             nifi_url="https://localhost:8443/nifi-api",
             nifi_dir=nifi_installation,
             files=filenames,
+            xml_conf=os.getenv("NIFI_XML_CONF"),
         )
     )
     # .add_automation(
@@ -59,4 +60,4 @@ controller = (
     # )
 )
 print(controller)
-controller.run(filemap=filemap)
+controller.run(filemap=filemap, nifi_log_poll_time=5, mft_log_poll_time=5)
