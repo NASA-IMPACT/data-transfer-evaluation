@@ -2,6 +2,7 @@ import multiprocessing
 import os
 import time
 from typing import Dict, List, Optional, Sequence, Tuple, Union
+from datetime import datetime
 
 from joblib import Parallel, delayed
 from loguru import logger
@@ -33,8 +34,64 @@ class MFTAutomation(AbstractAutomation):
         assert isinstance(shell_executor, ShellExecutor)
         self.shell_executor = shell_executor
 
+        cmd = [
+            "java",
+            "-jar",
+            os.path.join(self.mft_dir, "mft-client.jar"),
+            "s3",
+            "remote",
+            "add",
+            "-b",
+            config['source_s3_bucket'],
+            "-e",
+            config['source_s3_endpoint'],
+            "-k",
+            config['source_token'],
+            "-s",
+            config['source_secret'],
+            "-n",
+            'sources3',
+            "-r",
+            config['source_s3_region'],
+        ]
+        exdto = self.shell_executor(cmd)
+
+        for source_s3_out in exdto.output:
+            if source_s3_out.startswith("Storage Id"):
+                self.source_storage_id = source_s3_out.split(" ")[2].strip()
+                logger.debug(f"Source storage id = {self.source_storage_id}")
+                break
+
+        cmd = [
+            "java",
+            "-jar",
+            os.path.join(self.mft_dir, "mft-client.jar"),
+            "s3",
+            "remote",
+            "add",
+            "-b",
+            config['dest_s3_bucket'],
+            "-e",
+            config['dest_s3_endpoint'],
+            "-k",
+            config['dest_token'],
+            "-s",
+            config['dest_secret'],
+            "-n",
+            'dests3',
+            "-r",
+            config['dest_s3_region'],
+        ]
+        exdto = self.shell_executor(cmd)
+
+        for dest_s3_out in exdto.output:
+            if dest_s3_out.startswith("Storage Id"):
+                self.dest_storage_id = dest_s3_out.split(" ")[2].strip()
+                logger.debug(f"Destination storage id = {self.dest_storage_id}")
+                break
+
     def submit_transfer(
-        self, file_name: str, source_storage_id: str, dest_storage_id: str
+            self, file_name: str, source_storage_id: str, dest_storage_id: str
     ):
         cmd = [
             "java",
@@ -54,7 +111,7 @@ class MFTAutomation(AbstractAutomation):
             "S3",
             "-dt",
             "S3",
-        ]
+            ]
 
         exdto = self.shell_executor(cmd)
 
@@ -64,44 +121,36 @@ class MFTAutomation(AbstractAutomation):
         transfer_id = stdout.split("Submitted Transfer ")[1].strip()
         logger.info(f"Fetched Trasnfer id = {transfer_id}")
 
-        return transfer_id
+        return (transfer_id, file_name)
 
     def run_automation(self, njobs: int = 4, **kwargs) -> Tuple[TransferDTO]:
-        source_storage_id = self.config.get("source_storage_id", None)
-        dest_storage_id = self.config.get("dest_storage_id", None)
-        logger.debug(f"Source storage id = {source_storage_id}")
-        logger.debug(f"Dest storage id = {dest_storage_id}")
 
         assert (
-            source_storage_id and dest_storage_id
+                self.source_storage_id and self.dest_storage_id
         ), "Invalid storage ids! Are you sure you have 'source_storage_id' and 'dest_storage_id' in the config?"
 
         njobs = njobs or multiprocessing.cpu_count()
         njobs = max(njobs, 1)
         logger.debug(f"njobs = {njobs}")
 
-        transfer_ids = Parallel(n_jobs=njobs)(
-            delayed(self.submit_transfer)(fname, source_storage_id, dest_storage_id)
+        transfer_id_names = Parallel(n_jobs=njobs)(
+            delayed(self.submit_transfer)(fname, self.source_storage_id, self.dest_storage_id)
             for fname in self.files
         )
-        return self.parse_log(
-            transfer_ids=transfer_ids,
-            poll_wait_time=kwargs.get("mft_log_poll_time", 5) or 5,
-        )
+        return self.parse_log(transfer_id_names=transfer_id_names, poll_wait_time=5)
 
     def parse_log(
-        self, transfer_ids: List[str], poll_wait_time: int = 5
+            self, transfer_id_names, poll_wait_time: int = 5
     ) -> Tuple[TransferDTO]:
-        nids = len(transfer_ids)
+        nids = len(transfer_id_names)
 
         timekeeper = {}
         end_counter = 0
-        while (len(timekeeper) < nids) and (end_counter < nids):
-            # reset counter
-            end_counter = 0
+        while end_counter < nids:
+            # Note: Why?
             time.sleep(poll_wait_time)
 
-            for transfer_id in transfer_ids:
+            for (transfer_id, file_name) in transfer_id_names:
                 cmd = [
                     "java",
                     "-jar",
@@ -116,18 +165,19 @@ class MFTAutomation(AbstractAutomation):
                 for part in exdto.output:
                     if part.find("STARTING") != -1:
                         dto = timekeeper.get(
-                            transfer_id,
-                            TransferDTO(fname=transfer_id, transferer="mft"),
+                            file_name,
+                            TransferDTO(fname=file_name, transferer="mft"),
                         )
-                        dto.start_time = int(part.split("|")[1].strip()) / 1000
-                        timekeeper[transfer_id] = dto
+                        dto.start_time = datetime.fromtimestamp(int(part.split("|")[1].strip()) / 1000)
+                        timekeeper[file_name] = dto
 
                     if part.find("COMPLETED") != -1:
                         dto = timekeeper.get(
-                            transfer_id,
-                            TransferDTO(fname=transfer_id, transferer="mft"),
+                            file_name,
+                            TransferDTO(fname=file_name, transferer="mft"),
                         )
-                        dto.end_time = int(part.split("|")[1].strip()) / 1000
-                        timekeeper[transfer_id] = dto
+                        dto.end_time = datetime.fromtimestamp(int(part.split("|")[1].strip()) / 1000)
+                        timekeeper[file_name] = dto
                         end_counter += 1
+
         return tuple(timekeeper.values())
