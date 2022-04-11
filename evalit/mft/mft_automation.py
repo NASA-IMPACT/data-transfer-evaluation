@@ -155,9 +155,12 @@ class MFTAutomation(AbstractAutomation):
         timekeeper = {}
         end_counter = 0
         while end_counter < nids:
-            # Note: Why?
+            logger.debug(
+                f"[{self.__classname__}] log parser polling... {end_counter}/{nids} files transferred!"
+            )
             time.sleep(poll_wait_time)
 
+            end_counter = 0
             for (transfer_id, file_name) in transfer_id_names:
                 cmd = [
                     "java",
