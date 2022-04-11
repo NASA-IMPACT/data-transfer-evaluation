@@ -38,6 +38,9 @@ class StandardAutomationController(AbstractController):
 
         filemap = kwargs.get("filemap", {})
         logger.debug(f"Total files in filemap => {len(filemap)}")
+        if not filemap:
+            logger.warning("No files found! Aborting the runs!")
+            return
 
         file_sizes = tuple(map(lambda x: x["size"], filemap.values()))
         logger.debug(f"Total size of all file blobs => {(sum(file_sizes))}")
@@ -72,7 +75,7 @@ class StandardAutomationController(AbstractController):
             throughput = self.caclulate_throughput(
                 file_sizes_filemapped, results_filemapped
             )
-            logger.info(f"[{automation.__classname__}] Throughput = {throughput}")
+            logger.info(f"[{automation.__classname__}] Throughput = {throughput} Gbps.")
 
             self.generate_grapgs(automation.__classname__, results)
 

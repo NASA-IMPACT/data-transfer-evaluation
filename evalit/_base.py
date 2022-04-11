@@ -202,7 +202,7 @@ class AbstractController(ABC):
         )
         response_contents = s3_client.list_objects_v2(
             Bucket=cfg["source_s3_bucket"]
-        ).get("Contents")
+        ).get("Contents", {})
         return {
             val["Key"]: dict(size=val["Size"] / (1024 * 1024 * 1024))
             for val in response_contents
