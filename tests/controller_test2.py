@@ -50,6 +50,7 @@ controller = (
             nifi_dir=nifi_installation,
             files=filenames,
             xml_conf=os.getenv("NIFI_XML_CONF"),
+            debug=False,
         )
     )
     .add_automation(
@@ -65,5 +66,6 @@ results = controller.run(
     nifi_log_poll_time=5,
     mft_log_poll_time=5,
     mft_njobs=multiprocessing.cpu_count(),
+    mft_log_parser_njobs=1,
 )
-logger.debug(results)
+logger.info(results)

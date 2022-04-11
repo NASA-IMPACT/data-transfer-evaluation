@@ -17,6 +17,9 @@ class MFTAutomation(AbstractAutomation):
     This is the data transfer automation component for MFT.
     """
 
+    _LOG_START_PHRASE = "STARTING"
+    _LOG_COMPLETE_PHRASE = "COMPLETED"
+
     def __init__(
         self,
         config: Union[Dict[str, str], TYPE_PATH],
@@ -122,7 +125,8 @@ class MFTAutomation(AbstractAutomation):
         # to maintain the same previous logic, I just created the original output string
         stdout = "\n".join(exdto.output)
         transfer_id = stdout.split("Submitted Transfer ")[1].strip()
-        logger.info(f"Fetched Trasnfer id = {transfer_id}")
+        if self.debug:
+            logger.debug(f"Fetched Trasnfer id = {transfer_id}")
 
         return (transfer_id, file_name)
 
@@ -145,11 +149,21 @@ class MFTAutomation(AbstractAutomation):
             )
             for fname in self.files
         )
-        return self.parse_log(transfer_id_names=transfer_id_names, poll_wait_time=5)
+        return self.parse_log(
+            transfer_id_names=transfer_id_names,
+            poll_wait_time=kwargs.get("mft_log_poll_time", 5) or 5,
+            njobs=kwargs.get("mft_log_parser_njobs", cpu_count) or 1,
+        )
 
     def parse_log(
-        self, transfer_id_names: List[str], poll_wait_time: int = 5
+        self,
+        transfer_id_names: List[str],
+        poll_wait_time: int = 5,
+        njobs: int = 1,
     ) -> Tuple[TransferDTO]:
+        """
+        Parses the log and returns start/end times for each file transfer.
+        """
         nids = len(transfer_id_names)
 
         timekeeper = {}
@@ -159,22 +173,28 @@ class MFTAutomation(AbstractAutomation):
                 f"[{self.__classname__}] log parser polling... {end_counter}/{nids} files transferred!"
             )
             time.sleep(poll_wait_time)
-
             end_counter = 0
-            for (transfer_id, file_name) in transfer_id_names:
-                cmd = [
-                    "java",
-                    "-jar",
-                    os.path.join(self.mft_dir, "mft-client.jar"),
-                    "transfer",
-                    "state",
-                    "-a",
-                    transfer_id,
-                ]
-                exdto = self.shell_executor(cmd)
 
+            # get log outputs for all the transfer ids
+            outputs = Parallel(n_jobs=njobs)(
+                delayed(self.shell_executor)(
+                    [
+                        "java",
+                        "-jar",
+                        os.path.join(self.mft_dir, "mft-client.jar"),
+                        "transfer",
+                        "state",
+                        "-a",
+                        transfer_id,
+                    ]
+                )
+                for (transfer_id, file_name) in transfer_id_names
+            )
+
+            # parse each log output
+            for exdto, (transfer_id, file_name) in zip(outputs, transfer_id_names):
                 for part in exdto.output:
-                    if part.find("STARTING") != -1:
+                    if part.find(self._LOG_START_PHRASE) != -1:
                         dto = timekeeper.get(
                             file_name,
                             TransferDTO(fname=file_name, transferer="mft"),
@@ -184,7 +204,7 @@ class MFTAutomation(AbstractAutomation):
                         )
                         timekeeper[file_name] = dto
 
-                    if part.find("COMPLETED") != -1:
+                    if part.find(self._LOG_COMPLETE_PHRASE) != -1:
                         dto = timekeeper.get(
                             file_name,
                             TransferDTO(fname=file_name, transferer="mft"),
