@@ -1,3 +1,4 @@
+import multiprocessing
 import os
 import sys
 
@@ -28,7 +29,7 @@ logger.debug(filemap)
 
 # build controller with available automation components
 controller = (
-    StandardAutomationController(debug=False)
+    StandardAutomationController(debug=True)
     .add_automation(
         RcloneAutomation(
             dt_config,
@@ -51,13 +52,18 @@ controller = (
             xml_conf=os.getenv("NIFI_XML_CONF"),
         )
     )
-    # .add_automation(
-    #     MFTAutomation(
-    #         config=dt_config,
-    #         mft_dir=mft_installation,
-    #         files=filenames,
-    #     )
-    # )
+    .add_automation(
+        MFTAutomation(
+            config=dt_config,
+            mft_dir=mft_installation,
+            files=filenames,
+        )
+    )
 )
-print(controller)
-controller.run(filemap=filemap, nifi_log_poll_time=5, mft_log_poll_time=5)
+results = controller.run(
+    filemap=filemap,
+    nifi_log_poll_time=5,
+    mft_log_poll_time=5,
+    mft_njobs=multiprocessing.cpu_count(),
+)
+logger.debug(results)

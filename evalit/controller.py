@@ -33,18 +33,16 @@ class StandardAutomationController(AbstractController):
         This is the main entrypoint to the controller.
         It abstracts all the transfers and computation.
         """
-        logger.info("Controller has started...")
         controller_start = time.time()
+        logger.info("Controller has started...")
 
         filemap = kwargs.get("filemap", {})
         logger.debug(f"Total files in filemap => {len(filemap)}")
-        if not filemap:
-            logger.warning("No files found! Aborting the runs!")
-            return
 
         file_sizes = tuple(map(lambda x: x["size"], filemap.values()))
         logger.debug(f"Total size of all file blobs => {(sum(file_sizes))}")
 
+        controller_result = {}
         for automation in self.automations:
             results: Tuple[TransferDTO] = automation.run_automation(**kwargs)
             results = tuple(
@@ -59,7 +57,7 @@ class StandardAutomationController(AbstractController):
             # filter results based on filemap
             results_filemapped = tuple(filter(lambda r: r.fname in filemap, results))
 
-            # in some automation (like MFT), fname are temp ids returned by
+            # in case in some automation, fname are temp ids returned by
             # the transfer. So, in that case, no file matches.
             results_filemapped = (
                 results if not results_filemapped else results_filemapped
@@ -75,13 +73,15 @@ class StandardAutomationController(AbstractController):
             throughput = self.caclulate_throughput(
                 file_sizes_filemapped, results_filemapped
             )
-            logger.info(f"[{automation.__classname__}] Throughput = {throughput} Gbps.")
+            logger.info(f"[{automation.__classname__}] Throughput = {throughput}")
+            controller_result[automation.__classname__] = {"throughput": throughput}
 
             self.generate_grapgs(automation.__classname__, results)
 
         logger.info(
             f"Controller took total {time.time()-controller_start} seconds to run!"
         )
+        return controller_result
 
     def generate_grapgs(self, title: str, timesdto: Tuple[TransferDTO]):
         if not MATPLOTLIB:
