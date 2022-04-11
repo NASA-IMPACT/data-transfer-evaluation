@@ -58,6 +58,7 @@ controller = (
             config=dt_config,
             mft_dir=mft_installation,
             files=filenames,
+            njobs=multiprocessing.cpu_count(),
         )
     )
 )
@@ -65,7 +66,6 @@ results = controller.run(
     filemap=filemap,
     nifi_log_poll_time=5,
     mft_log_poll_time=5,
-    mft_njobs=multiprocessing.cpu_count(),
-    mft_log_parser_njobs=1,
+    mft_log_parser_njobs=multiprocessing.cpu_count(),
 )
 logger.info(results)

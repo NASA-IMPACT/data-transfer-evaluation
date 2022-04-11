@@ -26,6 +26,7 @@ class MFTAutomation(AbstractAutomation):
         mft_dir: TYPE_PATH,
         files: Optional[Sequence[TYPE_PATH]] = None,
         shell_executor: Optional[ShellExecutor] = None,
+        njobs: int = 4,
         debug: bool = False,
     ):
         super().__init__(config=config, files=files, debug=debug)
@@ -96,6 +97,14 @@ class MFTAutomation(AbstractAutomation):
                 logger.debug(f"Destination storage id = {self.dest_storage_id}")
                 break
 
+        cpu_count = multiprocessing.cpu_count()
+        njobs = njobs or cpu_count
+        # clip to >=1
+        njobs = max(1, njobs)
+        njobs = min(njobs, cpu_count)
+        self.njobs = njobs
+        logger.debug(f"njobs = {njobs}")
+
     def submit_transfer(
         self, file_name: str, source_storage_id: str, dest_storage_id: str
     ):
@@ -136,14 +145,8 @@ class MFTAutomation(AbstractAutomation):
             self.source_storage_id and self.dest_storage_id
         ), "Invalid storage ids! Are you sure you have 'source_storage_id' and 'dest_storage_id' in the config?"
 
-        cpu_count = multiprocessing.cpu_count()
-        njobs = kwargs.get("mft_njobs", cpu_count) or cpu_count
-        # clip to >=1
-        njobs = max(1, njobs)
-        njobs = min(njobs, cpu_count)
-        logger.debug(f"njobs = {njobs}")
-
-        transfer_id_names = Parallel(n_jobs=njobs)(
+        logger.debug(f"njobs = {self.njobs}")
+        transfer_id_names = Parallel(n_jobs=self.njobs)(
             delayed(self.submit_transfer)(
                 fname, self.source_storage_id, self.dest_storage_id
             )
@@ -152,7 +155,7 @@ class MFTAutomation(AbstractAutomation):
         return self.parse_log(
             transfer_id_names=transfer_id_names,
             poll_wait_time=kwargs.get("mft_log_poll_time", 5) or 5,
-            njobs=kwargs.get("mft_log_parser_njobs", cpu_count) or 1,
+            njobs=kwargs.get("mft_log_parser_njobs", multiprocessing.cpu_count()) or 1,
         )
 
     def parse_log(
