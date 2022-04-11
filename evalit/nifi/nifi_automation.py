@@ -114,23 +114,27 @@ class NifiAutomation(AbstractAutomation):
         old_connections = process_groups_json["processGroupFlow"]["flow"]["connections"]
 
         for connection in old_connections:
-            print("Deleting connection " + connection["id"])
+            if self.debug:
+                print("Deleting connection " + connection["id"])
             r = requests.delete(
                 nifi_url + "/connections/" + connection["id"],
                 params={"version": str(connection["revision"]["version"])},
                 verify=False,
             )
-            print("Status", r.status_code)
+            if self.debug:
+                print("Status", r.status_code)
 
         old_processors = process_groups_json["processGroupFlow"]["flow"]["processors"]
         for processor in old_processors:
-            print("Deleting processor ", processor["id"])
+            if self.debug:
+                print("Deleting processor ", processor["id"])
             r = requests.delete(
                 nifi_url + "/processors/" + processor["id"],
                 params={"version": str(processor["revision"]["version"])},
                 verify=False,
             )
-            print("Status", r.status_code)
+            if self.debug:
+                print("Status", r.status_code)
 
         # Deletes all template files
 
@@ -138,7 +142,10 @@ class NifiAutomation(AbstractAutomation):
         templates = r.json()["templates"]
 
         for template in templates:
-            print("Deleting template ", template["id"], template["template"]["name"])
+            if self.debug:
+                print(
+                    "Deleting template ", template["id"], template["template"]["name"]
+                )
             requests.delete(nifi_url + "/templates/" + template["id"], verify=False)
 
             # Upload the template file
@@ -209,13 +216,15 @@ class NifiAutomation(AbstractAutomation):
             "disconnectedNodeAcknowledged": "false",
         }
 
-        print("Updating ListS3 processor")
+        if self.debug:
+            print("Updating ListS3 processor")
         r = requests.put(
             nifi_url + "/processors/" + list_s3_processor["id"],
             json=list_s3_update_json,
             verify=False,
         )
-        print("Status", r.status_code)
+        if self.debug:
+            print("Status", r.status_code)
 
         fetch_s3_processor = processor_name_map["FetchS3Object"]
         fetch_s3_update_json = {
