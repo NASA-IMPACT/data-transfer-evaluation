@@ -199,6 +199,7 @@ class AbstractController(ABC):
             aws_access_key_id=cfg["source_token"],
             aws_secret_access_key=cfg["source_secret"],
             endpoint_url=cfg["source_s3_endpoint"],
+            region_name=cfg["source_s3_region"],
         )
         response_contents = s3_client.list_objects_v2(
             Bucket=cfg["source_s3_bucket"]
