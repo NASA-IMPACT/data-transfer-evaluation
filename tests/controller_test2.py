@@ -17,6 +17,9 @@ from loguru import logger
 from evalit.api import MFTAutomation, NifiAutomation, RcloneAutomation
 from evalit.controller import StandardAutomationController
 
+ncpus = multiprocessing.cpu_count()
+logger.info(f"N cpus = {ncpus}")
+
 nifi_installation = os.getenv("NIFI_INSTALLATION")
 mft_installation = os.getenv("MFT_INSTALLATION")
 
@@ -38,9 +41,9 @@ controller = (
             buffer_size=512,
             multi_thread_streams=10,
             multi_thread_cutoff=50,
-            ntransfers=8,
+            ntransfers=ncpus,
             s3_max_upload_parts=10,
-            s3_upload_concurrency=10,
+            s3_upload_concurrency=16,
         )
     )
     .add_automation(
@@ -58,7 +61,7 @@ controller = (
             config=dt_config,
             mft_dir=mft_installation,
             files=filenames,
-            njobs=multiprocessing.cpu_count(),
+            njobs=ncpus,
         )
     )
 )
@@ -66,6 +69,6 @@ results = controller.run(
     filemap=filemap,
     nifi_log_poll_time=5,
     mft_log_poll_time=5,
-    mft_log_parser_njobs=multiprocessing.cpu_count(),
+    mft_log_parser_njobs=ncpus,
 )
 logger.info(results)
