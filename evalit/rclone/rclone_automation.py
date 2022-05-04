@@ -17,6 +17,36 @@ from ..structures import TYPE_PATH, TransferDTO
 
 
 class RcloneAutomation(AbstractAutomation):
+    """
+    This is a s3-s3  transfer component using rclone.
+
+    Attributes:
+        config: `Path` or `str` or `Dict[str, str]`
+            Represents source/dest s3 configuration
+
+        files: `List[str]`
+            List of filenames to be transferred.
+            (Currently it's not used in RcloneAutomation)
+
+        shell_executor: `misc.shell.ShellExecutor`
+            A misc component to execute external shell commands.
+
+        debug: `bool`
+            A bool flag to represent if it's a debug mode.
+
+    Note:
+        For extra params to the rclone executor,
+        we pass them as keyword args through `**params`. Some of the params are:
+            - buffer_size (size of buffer)
+            - multi_thread_streams (how many chunks is to be created for each
+            file?)
+            - multi_thread_cutoff (threshold in MB to start chunking a single
+            file into multi_thread_streams chunks)
+            - ntransfers (number of parallelization for downloads)
+            - s3_max_upload_parts (how many chunks at max used to upload to s3?)
+            - s3_upload_concurrency (number of parallelization for uploads)
+    """
+
     def __init__(
         self,
         config: Union[Dict[str, str], TYPE_PATH],
@@ -40,6 +70,9 @@ class RcloneAutomation(AbstractAutomation):
         self.s3_upload_concurrency = params.get("s3_upload_concurrency", 10)
 
     def _generate_rclone_cfg(self) -> tempfile.NamedTemporaryFile:
+        """
+        Generate a temporary config file compatible to rclone.
+        """
         source_token = self.config["source_token"]
         source_secret = self.config["source_secret"]
         source_s3_endpoint = self.config["source_s3_endpoint"]
@@ -48,7 +81,6 @@ class RcloneAutomation(AbstractAutomation):
         dest_secret = self.config["dest_secret"]
         dest_s3_endpoint = self.config["dest_s3_endpoint"]
 
-        # segregate this to another method
         lines = [
             "[s3source]\n",
             "type = s3\n",
@@ -75,14 +107,23 @@ class RcloneAutomation(AbstractAutomation):
         ftemp.flush()
         return ftemp
 
-    def run_automation(self) -> Tuple[TransferDTO]:
+    def run_automation(self, **kwargs) -> Tuple[TransferDTO]:
+        """
+        Main interface to RcloneAutomation.
+
+        Returns:
+            tuple of individual file data transfer `Tuple[TransferDTO]`
+            where each element object stores
+            - filename
+            - start_time
+            - end_time
+            - transferer ("rclone")
+        """
         start_automation = time.time()
         source_s3_bucket = self.config["source_s3_bucket"]
         source_s3_region = self.config["source_s3_region"]
         dest_s3_bucket = self.config["dest_s3_bucket"]
         dest_s3_region = self.config["dest_s3_region"]
-
-        total_files = len(self.files)
 
         # temp files
         rclone_log_file = tempfile.NamedTemporaryFile(
@@ -130,6 +171,13 @@ class RcloneAutomation(AbstractAutomation):
     def parse_log(
         self, log: Union[str, TextIO], debug: bool = False
     ) -> Tuple[TransferDTO]:
+        """
+        Parse rclone-generated log file to extract transfer information
+        for each file.
+
+        Returns:
+            tuple of data transfer metadata `Tuple[TransferDTO]`.
+        """
         # in case it's a path
         if isinstance(log, str):
             log = open(log)

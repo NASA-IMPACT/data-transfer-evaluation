@@ -23,6 +23,8 @@ class NifiAutomation(AbstractAutomation):
         "template": "nifi-s3.xml",
         "log": "logs/nifi-app.log",
     }
+    _LOG_START_PHRASE = "Starting the data transfer"
+    _LOG_COMPLETE_PHRASE = "Completed the transfer"
 
     def __init__(
         self,
@@ -30,6 +32,7 @@ class NifiAutomation(AbstractAutomation):
         nifi_url: str,
         nifi_dir: TYPE_PATH,
         files: Optional[Sequence[TYPE_PATH]] = None,
+        xml_conf: Optional[str] = None,
         debug: bool = False,
         **params,
     ) -> None:
@@ -39,7 +42,11 @@ class NifiAutomation(AbstractAutomation):
         assert os.path.exists(nifi_dir), f"{nifi_dir} path doesn't exist!"
         self.nifi_dir = nifi_dir
 
-    def run_automation(self):
+        if xml_conf is not None:
+            assert os.path.exists(xml_conf), f"{xml_conf} path doesn't exist!"
+        self.xml_conf = xml_conf
+
+    def run_automation(self, **kwargs):
         start_automation = time.time()
         logger.info(f"Running automation for {self.__classname__}")
 
@@ -49,12 +56,13 @@ class NifiAutomation(AbstractAutomation):
 
         # nifi_url = "https://localhost:8443/nifi-api"
         nifi_url = self.nifi_url
-        template_file = (
+        template_file = self.xml_conf or (
             Path(__file__)
             .parent.joinpath(self._RESOURCES_CFG["template"])
             .absolute()
             .as_posix()
         )
+        logger.debug(f"Using template: {template_file}")
 
         log_file_location = os.path.join(self.nifi_dir, self._RESOURCES_CFG["log"])
         logger.debug(f"log_file_location = {log_file_location}")
@@ -106,23 +114,27 @@ class NifiAutomation(AbstractAutomation):
         old_connections = process_groups_json["processGroupFlow"]["flow"]["connections"]
 
         for connection in old_connections:
-            print("Deleting connection " + connection["id"])
+            if self.debug:
+                print("Deleting connection " + connection["id"])
             r = requests.delete(
                 nifi_url + "/connections/" + connection["id"],
                 params={"version": str(connection["revision"]["version"])},
                 verify=False,
             )
-            print("Status", r.status_code)
+            if self.debug:
+                print("Status", r.status_code)
 
         old_processors = process_groups_json["processGroupFlow"]["flow"]["processors"]
         for processor in old_processors:
-            print("Deleting processor ", processor["id"])
+            if self.debug:
+                print("Deleting processor ", processor["id"])
             r = requests.delete(
                 nifi_url + "/processors/" + processor["id"],
                 params={"version": str(processor["revision"]["version"])},
                 verify=False,
             )
-            print("Status", r.status_code)
+            if self.debug:
+                print("Status", r.status_code)
 
         # Deletes all template files
 
@@ -130,7 +142,10 @@ class NifiAutomation(AbstractAutomation):
         templates = r.json()["templates"]
 
         for template in templates:
-            print("Deleting template ", template["id"], template["template"]["name"])
+            if self.debug:
+                print(
+                    "Deleting template ", template["id"], template["template"]["name"]
+                )
             requests.delete(nifi_url + "/templates/" + template["id"], verify=False)
 
             # Upload the template file
@@ -201,13 +216,15 @@ class NifiAutomation(AbstractAutomation):
             "disconnectedNodeAcknowledged": "false",
         }
 
-        print("Updating ListS3 processor")
+        if self.debug:
+            print("Updating ListS3 processor")
         r = requests.put(
             nifi_url + "/processors/" + list_s3_processor["id"],
             json=list_s3_update_json,
             verify=False,
         )
-        print("Status", r.status_code)
+        if self.debug:
+            print("Status", r.status_code)
 
         fetch_s3_processor = processor_name_map["FetchS3Object"]
         fetch_s3_update_json = {
@@ -215,7 +232,7 @@ class NifiAutomation(AbstractAutomation):
                 "id": fetch_s3_processor["id"],
                 "name": "FetchS3Object",
                 "config": {
-                    "concurrentlySchedulableTaskCount": "1",
+                    "concurrentlySchedulableTaskCount": "10",
                     "schedulingPeriod": "0 sec",
                     "executionNode": "ALL",
                     "penaltyDuration": "30 sec",
@@ -253,7 +270,7 @@ class NifiAutomation(AbstractAutomation):
                 "id": put_s3_processor["id"],
                 "name": "PutS3Object",
                 "config": {
-                    "concurrentlySchedulableTaskCount": "1",
+                    "concurrentlySchedulableTaskCount": "10",
                     "schedulingPeriod": "0 sec",
                     "executionNode": "ALL",
                     "penaltyDuration": "30 sec",
@@ -303,7 +320,7 @@ class NifiAutomation(AbstractAutomation):
                     "runDurationMillis": 0,
                     "autoTerminatedRelationships": ["success"],
                     "properties": {
-                        "log-message": "Starting the data transfer "
+                        "log-message": f"{self._LOG_START_PHRASE} "
                         + session_uuid
                         + " ${filename}"
                     },
@@ -338,7 +355,7 @@ class NifiAutomation(AbstractAutomation):
                     "runDurationMillis": 0,
                     "autoTerminatedRelationships": ["success"],
                     "properties": {
-                        "log-message": "Completed the transfer "
+                        "log-message": f"{self._LOG_COMPLETE_PHRASE} "
                         + session_uuid
                         + " ${filename}"
                     },
@@ -374,7 +391,7 @@ class NifiAutomation(AbstractAutomation):
             log=log_file_location,
             nfiles=len(self.files),
             session_uuid=session_uuid,
-            poll_wait_time=5,
+            poll_wait_time=kwargs.get("nifi_log_poll_time", 5) or 5,
         )
         logger.debug(
             f"Delta time for {self.__classname__} = {time.time() - start_automation}"
@@ -387,25 +404,37 @@ class NifiAutomation(AbstractAutomation):
         timekeeper = {}
         end_counter = 0
 
-        # TODO: Optimize this!
-        while (len(timekeeper) < nfiles) and (end_counter < nfiles):
+        # We need to poll the logging
+        while end_counter < nfiles:
+            logger.debug(
+                f"[{self.__classname__}] log parser polling... {end_counter}/{nfiles} files transferred!"
+            )
             time.sleep(poll_wait_time)
             # read file line by line
             with open(log, "r") as f:
+                # reset counter
+                end_counter = 0
                 for line in f:
                     if line.find(session_uuid) != -1:
                         utc_time = datetime.strptime(
                             line.split(",")[0], "%Y-%m-%d %H:%M:%S"
                         )
                         fname = line.split(session_uuid)[1].strip()
-                        is_start = line.split(session_uuid)[0].find("Starting") > -1
+                        is_start = (
+                            line.split(session_uuid)[0].find(self._LOG_START_PHRASE)
+                            > -1
+                        )
+                        is_complete = (
+                            line.split(session_uuid)[0].find(self._LOG_COMPLETE_PHRASE)
+                            > -1
+                        )
 
                         dto = timekeeper.get(
                             fname, TransferDTO(fname=fname, transferer="nifi")
                         )
                         if is_start:
                             dto.start_time = utc_time
-                        else:
+                        if is_complete:
                             dto.end_time = utc_time
                             end_counter += 1
                         timekeeper[fname] = dto

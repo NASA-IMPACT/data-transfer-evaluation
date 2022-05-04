@@ -1,3 +1,4 @@
+boto3==1.21.40
 joblib==1.1.0
 loguru==0.6.0
 matplotlib==3.5.1
