@@ -1,3 +1,4 @@
+from ._base import AbstractAutomation
 from .mft import MFTAutomation
 from .nifi import NifiAutomation
 from .rclone import RcloneAutomation

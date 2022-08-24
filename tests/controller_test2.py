@@ -14,7 +14,12 @@ print(f"automation pkg version: {evalit.__version__}")
 
 from loguru import logger
 
-from evalit.api import MFTAutomation, NifiAutomation, RcloneAutomation
+from evalit.api import (
+    AbstractAutomation,
+    MFTAutomation,
+    NifiAutomation,
+    RcloneAutomation,
+)
 from evalit.controller import StandardAutomationController
 
 ncpus = multiprocessing.cpu_count()
@@ -24,11 +29,13 @@ nifi_installation = os.getenv("NIFI_INSTALLATION")
 mft_installation = os.getenv("MFT_INSTALLATION")
 
 dt_config = os.getenv("CFG_YAML", "tests/config.yaml")
-dt_config = RcloneAutomation.load_yaml(dt_config)
+dt_config = AbstractAutomation.load_yaml(dt_config)
+logger.debug(f"Redacted config:: {AbstractAutomation._get_redacted_cfg(dt_config)}")
 
 filemap = StandardAutomationController.get_source_file_map(dt_config)
 filenames = tuple(filemap.keys())
-logger.debug(filemap)
+logger.debug(f"filemap:: {filemap}")
+
 
 # build controller with available automation components
 controller = (
