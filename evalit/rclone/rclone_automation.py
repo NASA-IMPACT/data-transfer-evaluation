@@ -20,31 +20,39 @@ class RcloneAutomation(AbstractAutomation):
     """
     This is a s3-s3  transfer component using rclone.
 
-    Attributes:
-        config: `Path` or `str` or `Dict[str, str]`
-            Represents source/dest s3 configuration
+    Args:
+        ```config```: ```Union[str, pathlib.Path, Dict[str, str]]```
+            Represents  configuration for the framework.
+            See `AbstractAutomation` documentation for more information.
 
-        files: `List[str]`
+        ```files```: ```List[str]```
             List of filenames to be transferred.
             (Currently it's not used in RcloneAutomation)
 
-        shell_executor: `misc.shell.ShellExecutor`
+        ```shell_executor```: ```misc.shell.ShellExecutor```
             A misc component to execute external shell commands.
 
-        debug: `bool`
-            A bool flag to represent if it's a debug mode.
+        ```debug```: ```bool```
+            Flag for debugging mode.
 
-    Note:
-        For extra params to the rclone executor,
-        we pass them as keyword args through `**params`. Some of the params are:
-            - buffer_size (size of buffer)
-            - multi_thread_streams (how many chunks is to be created for each
+        ```params```: ```Any```
+            kwargs for more control for rcloen transfers.
+            (See `Extra params` section)
+
+    Extra params:
+        For extra params to the rclone executor, we pass them as keyword args
+        through `**params`. Some of the params are:
+
+            - `buffer_size` (size of buffer)
+            - `multi_thread_streams` (how many chunks is to be created for each
             file?)
-            - multi_thread_cutoff (threshold in MB to start chunking a single
+            - `multi_thread_cutoff` (threshold in MB to start chunking a single
             file into multi_thread_streams chunks)
-            - ntransfers (number of parallelization for downloads)
-            - s3_max_upload_parts (how many chunks at max used to upload to s3?)
-            - s3_upload_concurrency (number of parallelization for uploads)
+            - `ntransfers` (number of parallelization for downloads)
+            - `s3_max_upload_parts` (how many chunks at max used to upload to s3?)
+            - `s3_upload_concurrency` (number of parallelization for uploads)
+
+    See: https://rclone.org/docs/
     """
 
     def __init__(
@@ -72,6 +80,9 @@ class RcloneAutomation(AbstractAutomation):
     def _generate_rclone_cfg(self) -> tempfile.NamedTemporaryFile:
         """
         Generate a temporary config file compatible to rclone.
+
+        Returns:
+            `tempfile.NamedTemporaryFile` file object.
         """
         source_token = self.config["source_token"]
         source_secret = self.config["source_secret"]
@@ -109,10 +120,15 @@ class RcloneAutomation(AbstractAutomation):
 
     def run_automation(self, **kwargs) -> Tuple[TransferDTO]:
         """
-        Main interface to RcloneAutomation.
+        Main entrypoint/interface to run the RcloneAutomation.
+
+        Args:
+            ```kwargs```: ```any```
+                keyword args
+                (for now, nothing is used!)
 
         Returns:
-            tuple of individual file data transfer `Tuple[TransferDTO]`
+            Tuple of individual file data transfer `Tuple[TransferDTO]`,
             where each element object stores
             - filename
             - start_time
@@ -174,6 +190,12 @@ class RcloneAutomation(AbstractAutomation):
         """
         Parse rclone-generated log file to extract transfer information
         for each file.
+
+        Args:
+            ```log```: ```Union[str, TextIO]```
+                Rclone log file to be parsed
+            ```debug```: ```bool```
+                Debugging mode flag
 
         Returns:
             tuple of data transfer metadata `Tuple[TransferDTO]`.
