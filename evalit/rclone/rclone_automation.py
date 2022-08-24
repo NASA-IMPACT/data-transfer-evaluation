@@ -19,6 +19,7 @@ from ..structures import TYPE_PATH, TransferDTO
 class RcloneAutomation(AbstractAutomation):
     """
     This is a s3-s3  transfer component using rclone.
+    This acts as an interface to direct `rclone` command.
 
     Args:
         ```config```: ```Union[str, pathlib.Path, Dict[str, str]]```

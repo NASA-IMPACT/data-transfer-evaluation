@@ -19,10 +19,55 @@ from ..structures import TYPE_PATH, TransferDTO
 
 
 class NifiAutomation(AbstractAutomation):
+    """
+    Automation component for Nifi.
+    This acts as an interface to `nifi` server.
+    (See installation/setup guide for nifi)
+
+    Args:
+
+        ```config```: ```Union[str, pathlib.Path, Dict[str, str]]```
+                Configuration for the transfer repo
+
+        ```nifi_url```: ```str```
+            URL to communicate with nifi server
+            (Usuaally: "https://localhost:8443/nifi-api")
+
+        ```nifi_dir```: ```Union[str, pathlib.Path]```
+                Path to the nifi installation directory
+                (Normally, we get this from the environment variable `NIFI_INSTALLATION`)
+
+
+        ```files```: ```List[str]```
+            List of filenames to be transferred.
+            (Currently it's not used in RcloneAutomation)
+
+        ```xml_conf```: ```Optional[str]```
+            Path to the nifi s3 xml configuration.
+            Defaults to `nifi/nifi-s3.xml` package file in the transfer repo.
+            This provides more configurability/control for transfer using nifi.
+
+        ```debug```: ```bool```
+            Debug mode flag. Defaults to False.
+
+        ```params```: ```Any```
+            keyword args provided for nifi transfer, misc.
+            (Currently not used.)
+
+    Note:
+        1) Since, nifi transfers happen in async mode -- jobs are submitted
+        to initiate transfer -- we need to parse nifi log every N seconds
+        (see `nifi_log_poll_time` kwarg to `NifiAutomation.run_automation(...)`)
+        to figure out the status of the transfer. This poll-based log parsing
+        is also sued in `MftAutomation`.
+    """
+
     _RESOURCES_CFG = {
         "template": "nifi-s3.xml",
         "log": "logs/nifi-app.log",
     }
+
+    # these are used for parsing nifi log
     _LOG_START_PHRASE = "Starting the data transfer"
     _LOG_COMPLETE_PHRASE = "Completed the transfer"
 
@@ -46,7 +91,23 @@ class NifiAutomation(AbstractAutomation):
             assert os.path.exists(xml_conf), f"{xml_conf} path doesn't exist!"
         self.xml_conf = xml_conf
 
-    def run_automation(self, **kwargs):
+    def run_automation(self, **kwargs) -> Tuple[TransferDTO]:
+        """
+        Args:
+            ```kwargs```: ```Any```
+                extra params to be used for the transfer.
+                - `nifi_log_poll_time`
+                    - every N seconds to parse nifi log file to figure out
+                    if transfer is complete.
+
+        Returns:
+            Tuple of individual file data transfer `Tuple[TransferDTO]`,
+            where each element object stores
+            - filename
+            - start_time
+            - end_time
+            - transferer ("rclone")
+        """
         start_automation = time.time()
         logger.info(f"Running automation for {self.__classname__}")
 
@@ -401,10 +462,43 @@ class NifiAutomation(AbstractAutomation):
     def parse_log(
         self, log: str, nfiles: int, session_uuid: str, poll_wait_time: int = 5
     ) -> Tuple[TransferDTO]:
+        """
+        Parse nifi log based on polling mechanism.
+        This uses some string-matching line-by-line of the log file.
+
+        The string matching happens through patterns:
+            - NifiAutomation._LOG_START_PHRASE
+            - NifiAutomation._LOG_COMPLETE_PHRASE
+
+        Args:
+
+            ```log```: ```str```
+                Path to the nifi log file
+
+            ```nfiles```: ```int```
+                Total number of files that are being transferred.
+                (This is used to compute "when to stop" the poll)
+
+            ```session_uuid```: ```str```
+                Nifi transfer session id
+
+            ```poll_wait_time```: ```int```
+                Every `poll_wait_time` seconds, nifi log is parsed,
+                and decide if transfer is complete
+
+        Returns:
+            Tuple of individual file data transfer `Tuple[TransferDTO]`,
+            where each element object stores
+            - filename
+            - start_time
+            - end_time
+            - transferer ("nifi")
+        """
         timekeeper = {}
         end_counter = 0
 
         # We need to poll the logging
+        # till we all the `nfiles` are detected to be "transferred".
         while end_counter < nfiles:
             logger.debug(
                 f"[{self.__classname__}] log parser polling... {end_counter}/{nfiles} files transferred!"
