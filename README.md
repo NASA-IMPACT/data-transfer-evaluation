@@ -18,8 +18,9 @@ pip install -e .
 * Python 3.9 or higher
 
 
-### Minio manual setup
+### Minio setup
 
+#### Minio manual setup 
 * Minio is used to setup local S3 servers
 * Download minio server binary from https://min.io/download
 * Make sure to add minio binary to any of the system paths (/home/<user>/bin/, /usr/local/bin/ or /bin/)
@@ -51,7 +52,7 @@ dd if=/dev/zero of=/tmp/transfer-eval/src/testfile.1 bs=1024 count=1000000 This 
 
 or 
 
-### Minio automated setup scripts
+#### Minio automated setup scripts
 
 * The scripts to setup the minio source and destination servers can be found under `/scripts` folder
 * Execute `./buckets.sh` to create the buckets
