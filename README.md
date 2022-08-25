@@ -54,7 +54,7 @@ pip install -e .
 
 * Download and install rclone binary from ```curl https://rclone.org/install.sh | sudo bash```
 
-### Apache Nifi
+### Apache Nifi Installation
 
 * Download and unarchive Nifi binary from https://dlcdn.apache.org/nifi/1.15.3/nifi-1.15.3-bin.tar.gz
 * Unarchive the tar file ```tar -xf nifi-1.15.3-bin.tar.gz```
@@ -62,7 +62,7 @@ pip install -e .
 * Start Nifi server ```./bin/nifi.sh start --wait-for-init 120```
 * After tests are completed, run ```./bin/nifi.sh stop``` to stop the server
 
-### Airavata MFT
+### Airavata MFT Installation
 
 * Download and unarchive MFT Binary from https://github.com/apache/airavata-mft/releases/download/0.1-pre-release/airavata-mft-0.1.zip
 * Unzip the zip file ```unzip airavata-mft-0.1.zip```
@@ -83,31 +83,30 @@ pip install -e .
 
 ### Transfer configuration YAML sample
 
-source_token: "admin"
-source_secret: "password"
-source_s3_endpoint: "http://127.0.0.1:8080"
-source_s3_bucket: "src"
-source_s3_region: "us-east-1"
+```source_token: "admin"```
+```source_secret: "password"```
+```source_s3_endpoint: "http://127.0.0.1:8080"```
+```source_s3_bucket: "src"```
+```source_s3_region: "us-east-1"```
 
-dest_token: "admin"
-dest_secret: "password"
-dest_s3_endpoint: "http://127.0.0.1:8090"
-dest_s3_bucket: "dest"
-dest_s3_region: "us-east-1"
+```dest_token: "admin"```
+```dest_secret: "password"```
+```dest_s3_endpoint: "http://127.0.0.1:8090"```
+```dest_s3_bucket: "dest"```
+```dest_s3_region: "us-east-1"```
 
-Here, for the source:
-source_token represents minio username
-source_secret represents minio password
-source_s3_endpoint is where we are running the minio source server
-source_s3_bucket is the name of the source directory
-source_s3_region emulates s3 region (just use defaults)
+#### For Source Server:
+* source_token represents minio username
+* source_secret represents minio password
+* source_s3_endpoint is where we are running the minio source server
+* source_s3_bucket is the name of the source directory
+* source_s3_region emulates s3 region (just use defaults)
 
-
-For destination:
-dest_token represents minio username
-dest_secret represents minio password
-dest_s3_endpoint is where we are running the minio destination server
-dest_s3_bucket is the name of the destination directory
-dest_s3_region emulates s3 region (just use defaults)
+#### For Destination Server:
+* dest_token represents minio username
+* dest_secret represents minio password
+* dest_s3_endpoint is where we are running the minio destination server
+* dest_s3_bucket is the name of the destination directory
+* dest_s3_region emulates s3 region (just use defaults)
 
 
