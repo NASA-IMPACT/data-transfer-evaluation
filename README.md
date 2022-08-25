@@ -43,7 +43,10 @@ pip install -e .
 ### Emulate dummy source files
 
 * Use any UNIX tool to create a dummy file (it can be anything).
-* For brevity, we use `dd` command ```dd if=/dev/zero of=/tmp/transfer-eval/src/testfile.1 bs=1024 count=1000000 This creates a dummy file ~1GB```
+* For brevity, we use `dd` command 
+```bash
+dd if=/dev/zero of=/tmp/transfer-eval/src/testfile.1 bs=1024 count=1000000 This creates a dummy file ~1GB
+```
 
 ### Configuration
 
