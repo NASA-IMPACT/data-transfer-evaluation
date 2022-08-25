@@ -83,17 +83,19 @@ pip install -e .
 
 ### Transfer configuration YAML sample
 
-```source_token: "admin"```
-```source_secret: "password"```
-```source_s3_endpoint: "http://127.0.0.1:8080"```
-```source_s3_bucket: "src"```
-```source_s3_region: "us-east-1"```
+* ```source_token: "admin"```
+* ```source_secret: "password"```
+* ```source_s3_endpoint: "http://127.0.0.1:8080"```
+* ```source_s3_bucket: "src"```
+* ```source_s3_region: "us-east-1"```
+* ```source_storage_id: " "```
 
-```dest_token: "admin"```
-```dest_secret: "password"```
-```dest_s3_endpoint: "http://127.0.0.1:8090"```
-```dest_s3_bucket: "dest"```
-```dest_s3_region: "us-east-1"```
+* ```dest_token: "admin"```
+* ```dest_secret: "password"```
+* ```dest_s3_endpoint: "http://127.0.0.1:8090"```
+* ```dest_s3_bucket: "dest"```
+* ```dest_s3_region: "us-east-1"```
+* ```dest_storage_id= " "```
 
 #### For Source Server:
 * source_token represents minio username
