@@ -30,14 +30,14 @@ pip install -e .
 ### Setup Source Buckets
 * Open the first terminal (say A)
 * Go to the emulate bucket directory (say /tmp/transfer-eval)
-* Set the username and password in this command that we will use for the authentication while transferring + run the source server (MINIO_ROOT_USER=<username> MINIO_ROOT_PASSWORD=<password> minio server ./<path> --address :<port>)
+* Set the username and password in this command that we will use for the authentication while transferring + run the source server (`MINIO_ROOT_USER=<username> MINIO_ROOT_PASSWORD=<password> minio server ./<path> --address :<port>`)
 * This will run the source bucket server at port <port> Eg:  ```MINIO_ROOT_USER=admin MINIO_ROOT_PASSWORD=password minio server ./src --address :8080```
 
 
 ### Setup Destination Buckets
 * Open the first terminal (say B)
 * Go to the emulate bucket directory (say /tmp/transfer-eval)
-* Set the username and password in this command that we will use for the authentication while transferring + run the source server (MINIO_ROOT_USER=<username> MINIO_ROOT_PASSWORD=<password> minio server ./<path> --address :<port>)
+* Set the username and password in this command that we will use for the authentication while transferring + run the source server (`MINIO_ROOT_USER=<username> MINIO_ROOT_PASSWORD=<password> minio server ./<path> --address :<port>`)
 * This will run the destination bucket server at port <port> Eg:  ```MINIO_ROOT_USER=admin MINIO_ROOT_PASSWORD=password minio server ./dest --address :8080```
 
 ### Emulate dummy source files
@@ -78,8 +78,8 @@ pip install -e .
 * Create a transfer configuration YAML file (see the section below for reference)
 * Before running this, you need to export few environment variables
 * CFG_YAML: Path to the transfer YAML config.yaml file
-* NIFI_INSTALLATION: Path to nifi base directory (eg: /home/<username>/nifi/nifi-1.15.3/)
-* MFT_INSTALLATION Path to mft base directory (eg: /home/<username>/airawata-mft/)
+* NIFI_INSTALLATION: Path to nifi base directory (eg: `/home/<username>/nifi/nifi-1.15.3/`)
+* MFT_INSTALLATION Path to mft base directory (eg: `/home/<username>/airawata-mft/`)
 
 ### Transfer configuration YAML sample
 
