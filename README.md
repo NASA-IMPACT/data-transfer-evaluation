@@ -49,6 +49,8 @@ pip install -e .
 dd if=/dev/zero of=/tmp/transfer-eval/src/testfile.1 bs=1024 count=1000000 This creates a dummy file ~1GB
 ```
 
+or 
+
 ### Minio automated setup scripts
 
 * The scripts to setup the minio source and destination servers can be found under `/scripts` folder
