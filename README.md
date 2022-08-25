@@ -65,13 +65,49 @@ pip install -e .
 ### Airavata MFT
 
 * Download and unarchive MFT Binary from https://github.com/apache/airavata-mft/releases/download/0.1-pre-release/airavata-mft-0.1.zip
-* Unzip the zip file ```unzip airavata-mft.zip```
+* Unzip the zip file ```unzip airavata-mft-0.1.zip```
 * Start consul server by running ```./start-consul.sh mac``` or ```./start-consul.sh linux``` depending on the operating system
 * Start Airavata MFT by running ```./start-mft.sh```
 * After tests are completed, run ```./stop-mft.sh && ./stop-consul.sh``` to stop MFT services
 
-### Examples and usages
+### Test Run Eval Framework
 
-* cd into `tests/` directory for examples.
+* Make sure minio servers and transfer tools are up and configured
+* cd into `tests/` directory for examples
 * Execute ```python3 controller_test2.py``` to initiate the transfer
+* Create a transfer configuration YAML file (see the section below for reference)
+* Before running this, you need to export few environment variables
+* CFG_YAML: Path to the transfer YAML config.yaml file
+* NIFI_INSTALLATION: Path to nifi base directory (eg: /home/<username>/nifi/nifi-1.15.3/)
+* MFT_INSTALLATION Path to mft base directory (eg: /home/<username>/airawata-mft/)
+
+### Transfer configuration YAML sample
+
+source_token: "admin"
+source_secret: "password"
+source_s3_endpoint: "http://127.0.0.1:8080"
+source_s3_bucket: "src"
+source_s3_region: "us-east-1"
+
+dest_token: "admin"
+dest_secret: "password"
+dest_s3_endpoint: "http://127.0.0.1:8090"
+dest_s3_bucket: "dest"
+dest_s3_region: "us-east-1"
+
+Here, for the source:
+source_token represents minio username
+source_secret represents minio password
+source_s3_endpoint is where we are running the minio source server
+source_s3_bucket is the name of the source directory
+source_s3_region emulates s3 region (just use defaults)
+
+
+For destination:
+dest_token represents minio username
+dest_secret represents minio password
+dest_s3_endpoint is where we are running the minio destination server
+dest_s3_bucket is the name of the destination directory
+dest_s3_region emulates s3 region (just use defaults)
+
 
