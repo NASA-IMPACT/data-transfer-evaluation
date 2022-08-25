@@ -93,6 +93,8 @@ class NifiAutomation(AbstractAutomation):
 
     def run_automation(self, **kwargs) -> Tuple[TransferDTO]:
         """
+        Runs nifi automation
+
         Args:
             ```kwargs```: ```Any```
                 extra params to be used for the transfer.

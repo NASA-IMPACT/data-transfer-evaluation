@@ -1,3 +1,4 @@
+import pathlib
 import time
 from datetime import datetime
 from typing import List, Tuple
@@ -15,7 +16,7 @@ except ModuleNotFoundError:
 
 
 from ._base import AbstractController
-from .structures import TransferDTO
+from .structures import TYPE_PATH, TransferDTO
 
 
 class StandardAutomationController(AbstractController):
@@ -28,10 +29,36 @@ class StandardAutomationController(AbstractController):
         - generate bar graph
     """
 
-    def run(self, **kwargs) -> None:
+    def run(self, **kwargs) -> dict:
         """
         This is the main entrypoint to the controller.
         It abstracts all the transfers and computation.
+        It goes through all the available `Type[AbstractAutomation]` objects
+        (inside `self.automations`) and perform the transfer,
+        track files and benchmark.
+
+        Args:
+            ```kwargs```: ```Any```
+                Extra params that are used by controller for success.
+                (See kwargs section below.)
+
+        Kwargs:
+            ```filemap```: ```Dict[str, dict]```
+                Represents the metadata information for each file.
+                - Key is filename
+                - Value is another dictionary that has size information.
+            ```nifi_log_poll_time```: ```int```
+                Time in seconds used by nifi log parser
+                (See `nifi.NifiAutomation`)
+            ```mft_log_poll_time```: ```int```
+                Time in seconds used by mft log parser
+                (See `mft.MftAutomation`)
+            ```mft_log_parser_njobs```: ```int```
+                Number of parallelism for mft automation component.
+                Defaults to total number of CPUs detected.
+
+        Returns:
+            Overall evaluation result (dict)
         """
         controller_start = time.time()
         logger.info("Controller has started...")
@@ -76,14 +103,27 @@ class StandardAutomationController(AbstractController):
             logger.info(f"[{automation.__classname__}] Throughput = {throughput}")
             controller_result[automation.__classname__] = {"throughput": throughput}
 
-            self.generate_grapgs(automation.__classname__, results)
+            self.generate_graph("tmp/", automation.__classname__, results)
 
         logger.info(
             f"Controller took total {time.time()-controller_start} seconds to run!"
         )
         return controller_result
 
-    def generate_grapgs(self, title: str, timesdto: Tuple[TransferDTO]):
+    def generate_graph(
+        self, filename: TYPE_PATH, title: str, timesdto: Tuple[TransferDTO]
+    ):
+        """
+        Generate (bar) graph for the transfer.
+        Args:
+            ```filename```: ```Union[str, pathlib.Path]```
+                Path to save the figure
+            ```title```: ```str```
+                TItle for the graph (also used as filename)
+            ```timesdto```: ```Tuple[TransferDTO]```
+                List  of transfer information objects from which delta time
+                is computed for the transfer.
+        """
         if not MATPLOTLIB:
             logger.warning("Matplotlib not found. Can't generate figure! Halting!")
             return
@@ -91,18 +131,35 @@ class StandardAutomationController(AbstractController):
         times = self.dtotimes_to_times(timesdto)
         for i in range(len(times)):
             plt.barh(i + 1, times[i][1] - times[i][0], left=times[i][0])
-        plt.savefig(title + ".png")
+        plt.title(title)
+
+        path = pathlib.Path(filename)
+        # if it's a directory, create a new unique filename
+        if not path.as_posix().endswith((".png", ".jpg", ".jpeg")):
+            path.mkdir(parents=True, exist_ok=True)
+            path = path.joinpath(f"{title}_{time.time()}.png")
+        plt.savefig(path)
 
     def caclulate_throughput(
         self, file_sizes: List[int], timesdto: Tuple[TransferDTO]
     ) -> float:
         """
         Calculate transfer throughput in terms of Gbps
+
+        Args:
+            ```file_sizes```: ```List[int]```
+                List of file sizes to compute throughput
+            ```timesdto```: ```Tuple[TransferDTO]```
+                List  of transfer information objects
+                from which delta times are calculated for throughput.
+        Returns:
+            ```float``` throughput value (Gbps)
         """
         times = self.dtotimes_to_times(timesdto)
         total_volume = sum(file_sizes)
         val = 0
         try:
+            # *8 -> for Gbps not GBps
             val = total_volume * 8 / (float(np.max(times)) - float(np.min(times)))
         except ZeroDivisionError:
             logger.error("Error while computing throughput!")
