@@ -38,19 +38,23 @@ or
 * Execute `./buckets.sh` to create the buckets
 * Execute `./start-minio.sh` to start the source and destination servers
 
-#### Create dummy buckets automatically
+### Create dummy buckets automatically
 
 `./buckets.sh` creates temporary buckets:
 - `/tmp/transfer-eval/src/`
 - `/tmp/transfer-eval/dest/`
 
-#### Run minio source/destination servers directly using YAML config
+### Run minio source/destination servers directly using YAML config
 
 Check the configuration section in [README](README.md) for creating the config.
 Once we have the YAML config, we can use it to directly initialize minio servers.
 
+Also, the path to minio binary can be controlled by the environment variable `MINIO_BIN`.
+Eg: `export MINIO_BIN=~/bin/minio` (this is also the default path in the script.)
+
 - Export the path to YAML to the environment variable `CFG_YAML`:
     - `export CFG_YAML=<path_to_yaml_file>`
+- Set `MINIO_BIN` path variable
 - Start source bucket server: `./scripts/start-minio.sh src`
 - Start destination bucket server: `./scripts/start-minio.sh dest`
 
@@ -61,7 +65,7 @@ Once we have the YAML config, we can use it to directly initialize minio servers
 
 * Download and install rclone binary from ```curl https://rclone.org/install.sh | sudo bash```
 
-### Apache Nifi Installation
+# Apache Nifi Installation
 
 * Download and unarchive Nifi binary from https://dlcdn.apache.org/nifi/1.15.3/nifi-1.15.3-bin.tar.gz
 * Unarchive the tar file ```tar -xf nifi-1.15.3-bin.tar.gz```
@@ -69,7 +73,7 @@ Once we have the YAML config, we can use it to directly initialize minio servers
 * Start Nifi server ```./bin/nifi.sh start --wait-for-init 120```
 * After tests are completed, run ```./bin/nifi.sh stop``` to stop the server
 
-### Airavata MFT Installation
+# Airavata MFT Installation
 
 * Download and unarchive MFT Binary from https://github.com/apache/airavata-mft/releases/download/0.1-pre-release/airavata-mft-0.1.zip
 * Unzip the zip file ```unzip airavata-mft-0.1.zip```
