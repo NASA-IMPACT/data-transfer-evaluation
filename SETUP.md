@@ -67,7 +67,7 @@ Eg: `export MINIO_BIN=~/bin/minio` (this is also the default path in the script.
 
 # Apache Nifi Installation
 
-* Download and unarchive Nifi binary from https://dlcdn.apache.org/nifi/1.15.3/nifi-1.15.3-bin.tar.gz
+* Download and unarchive Nifi binary from https://archive.apache.org/dist/nifi/1.15.3/nifi-1.15.3-bin.tar.gz
 * Unarchive the tar file ```tar -xf nifi-1.15.3-bin.tar.gz```
 * Update property nifi.security.allow.anonymous.authentication=true in nifi-1.15.3/conf/nifi.properties
 * Start Nifi server ```./bin/nifi.sh start --wait-for-init 120```
@@ -75,7 +75,7 @@ Eg: `export MINIO_BIN=~/bin/minio` (this is also the default path in the script.
 
 # Airavata MFT Installation
 
-* Download and unarchive MFT Binary from https://github.com/apache/airavata-mft/releases/download/0.1-pre-release/airavata-mft-0.1.zip
+* Download and unarchive MFT Binary from https://github.com/apache/airavata-mft/releases/download/0.1-pre-release/airavata-mft.zip
 * Unzip the zip file ```unzip airavata-mft-0.1.zip```
 * Start consul server by running ```./start-consul.sh mac``` or ```./start-consul.sh linux``` depending on the operating system
 * Start Airavata MFT by running ```./start-mft.sh```
