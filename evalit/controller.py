@@ -81,11 +81,11 @@ class StandardAutomationController(AbstractController):
             )
             if self.debug:
                 logger.debug(f"[{automation.__classname__}]"
-                f"Results :: {results}")
+                             f"Results :: {results}")
 
             # filter results based on filemap
             results_filemapped = tuple(filter(lambda r: r.fname
-            in filemap, results))
+                                       in filemap, results))
 
             # in case in some automation, fname are temp ids returned by
             # the transfer. So, in that case, no file matches.
@@ -107,7 +107,7 @@ class StandardAutomationController(AbstractController):
             logger.info(f"[{automation.__classname__}]"
                         f"Throughput = {throughput}")
             controller_result[automation.__classname__] = {"throughput":
-                                                            throughput}
+                                                           throughput}
 
             self.generate_graph("tmp/", automation.__classname__, results)
 
@@ -133,7 +133,7 @@ class StandardAutomationController(AbstractController):
         """
         if not MATPLOTLIB:
             logger.warning("Matplotlib not found. " +
-                            "Can't generate figure! Halting!")
+                           "Can't generate figure! Halting!")
             return
 
         times = self.dtotimes_to_times(timesdto)
