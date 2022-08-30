@@ -128,8 +128,7 @@ class NifiAutomation(AbstractAutomation):
         )
         logger.debug(f"Using template: {template_file}")
 
-        log_file_location = os.path.join(self.nifi_dir,
-                                         self._RESOURCES_CFG["log"])
+        log_file_location = os.path.join(self.nifi_dir, self._RESOURCES_CFG["log"])
         logger.debug(f"log_file_location = {log_file_location}")
 
         source_token = self.config["source_token"]
@@ -209,11 +208,9 @@ class NifiAutomation(AbstractAutomation):
         for template in templates:
             if self.debug:
                 print(
-                    "Deleting template ", template["id"],
-                    template["template"]["name"]
+                    "Deleting template ", template["id"], template["template"]["name"]
                 )
-            requests.delete(nifi_url + "/templates/" +
-                            template["id"], verify=False)
+            requests.delete(nifi_url + "/templates/" + template["id"], verify=False)
 
             # Upload the template file
 
@@ -225,8 +222,7 @@ class NifiAutomation(AbstractAutomation):
             )
         }
         r = requests.post(
-            nifi_url + "/process-groups/" + process_group_id +
-            "/templates/upload",
+            nifi_url + "/process-groups/" + process_group_id + "/templates/upload",
             files=template_upload_json,
             verify=False,
         )
@@ -234,7 +230,7 @@ class NifiAutomation(AbstractAutomation):
         print("Template successfully uploaded")
         id_pos = r.text.find("<id>")
         id_end_pos = r.text.find("</id>")
-        template_id = r.text[id_pos + 4: id_end_pos]
+        template_id = r.text[id_pos + 4 : id_end_pos]
         print("Template id: " + template_id)
 
         template_load_json = {
@@ -244,8 +240,7 @@ class NifiAutomation(AbstractAutomation):
             "disconnectedNodeAcknowledged": "false",
         }
         r = requests.post(
-            nifi_url + "/process-groups/" + process_group_id +
-            "/template-instance",
+            nifi_url + "/process-groups/" + process_group_id + "/template-instance",
             json=template_load_json,
             verify=False,
         )
@@ -253,8 +248,7 @@ class NifiAutomation(AbstractAutomation):
         template_json = r.json()
         processor_name_map = {}
         for processor in template_json["flow"]["processors"]:
-            processor_name_map[processor["component"]
-                               ["name"]] = processor
+            processor_name_map[processor["component"]["name"]] = processor
 
         # Updating the credentials
 
@@ -397,8 +391,7 @@ class NifiAutomation(AbstractAutomation):
                 },
                 "state": "STOPPED",
             },
-            "revision": {"version": start_log_processor["revision"]
-                         ["version"]},
+            "revision": {"version": start_log_processor["revision"]["version"]},
             "disconnectedNodeAcknowledged": "false",
         }
         r = requests.put(
@@ -433,8 +426,7 @@ class NifiAutomation(AbstractAutomation):
                 },
                 "state": "STOPPED",
             },
-            "revision": {"version": complete_log_processor["revision"]
-                         ["version"]},
+            "revision": {"version": complete_log_processor["revision"]["version"]},
             "disconnectedNodeAcknowledged": "false",
         }
         r = requests.put(
@@ -528,13 +520,11 @@ class NifiAutomation(AbstractAutomation):
                         )
                         fname = line.split(session_uuid)[1].strip()
                         is_start = (
-                            line.split(session_uuid)[0].
-                            find(self._LOG_START_PHRASE)
+                            line.split(session_uuid)[0].find(self._LOG_START_PHRASE)
                             > -1
                         )
                         is_complete = (
-                            line.split(session_uuid)[0].
-                            find(self._LOG_COMPLETE_PHRASE)
+                            line.split(session_uuid)[0].find(self._LOG_COMPLETE_PHRASE)
                             > -1
                         )
 

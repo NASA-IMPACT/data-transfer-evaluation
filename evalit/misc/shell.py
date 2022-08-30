@@ -48,10 +48,8 @@ class ShellExecutor:
         assert not self.is_dangerous_command(commands)
 
         exdto = ExecutionDTO(cmd=commands, output=[], errors=[])
-        with subprocess.Popen(commands,
-                              shell=False,
-                              stdout=subprocess.PIPE,
-                              stderr=subprocess.STDOUT
+        with subprocess.Popen(
+            commands, shell=False, stdout=subprocess.PIPE, stderr=subprocess.STDOUT
         ) as proc:
             (out, err) = proc.communicate()
             exdto.output = out.decode("utf-8").split("\n")
