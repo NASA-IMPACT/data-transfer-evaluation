@@ -115,7 +115,10 @@ class AbstractAutomation(ABC):
             config = self.load_yaml(config)
         if not isinstance(config, dict):
             raise TypeError(
-                f"Invalid type for config. Expected Dict[str, str]. Got {type(config)}"
+                (
+                    f"Invalid type for config. Expected Dict[str, str]. "
+                    f"Got {type(config)}"
+                )
             )
         self.config = copy.deepcopy(config)
         if debug:
@@ -168,7 +171,11 @@ class AbstractAutomation(ABC):
         logger.info(f"Loading yaml from {config_yaml}")
         if not isinstance(config_yaml, (str, Path)):
             raise TypeError(
-                f"Invalid type for config_yaml={config_yaml}. Expected type of str or pathlib.Path. Got {type(config_yaml)}"
+                (
+                    f"Invalid type for config_yaml={config_yaml}. "
+                    "Expected type of str or pathlib.Path. "
+                    f"Got {type(config_yaml)}"
+                )
             )
 
         config = {}
@@ -253,7 +260,9 @@ class AbstractAutomation(ABC):
             nchars = nchars or 0
             nchars = min(nchars, n)
             indices = random.choices(list(range(n)), k=nchars)
-            return "".join(["*" if i in indices else c for i, c in enumerate(text)])
+            return "".join(
+                ["*" if i in indices else c for i, c in enumerate(text)]
+            )  # mask
 
         res = copy.deepcopy(cfg)
         res = map(lambda x: (x[0], _redact_string(x[1])), res.items())
@@ -263,7 +272,11 @@ class AbstractAutomation(ABC):
         params = copy.deepcopy(self.__dict__)
         params.pop("files", None)
         cfg = params.pop("config", {})
-        return f"[{self.__classname__}] | [Redacted config] = {self._get_redacted_cfg(cfg)} | [params] => {params}"
+        return (
+            f"[{self.__classname__}] | "
+            f"[Redacted config] = {self._get_redacted_cfg(cfg)} | "
+            f"[params] => {params}"
+        )
 
 
 class AbstractController(ABC):
@@ -329,7 +342,7 @@ class AbstractController(ABC):
             cfg = AbstractAutomation.load_yaml(cfg)
 
         # importing at runtime, as it's not a necessity to use this function
-        import boto3
+        import boto3  # noqa
 
         logger.debug(f"Boto3 version: {boto3.__version__}")
 
@@ -365,7 +378,11 @@ class AbstractController(ABC):
         for automation in automations:
             if not isinstance(automation, AbstractAutomation):
                 raise TypeError(
-                    f"Invalid type for automation={automation}. Expected Type[AbstractAutomation]. Got {type(automation)}"
+                    (
+                        f"Invalid type for automation={automation}. "
+                        "Expected Type[AbstractAutomation]. "
+                        f"Got {type(automation)}"
+                    )
                 )
         return True
 
@@ -384,7 +401,11 @@ class AbstractController(ABC):
         """
         if not isinstance(automation, AbstractAutomation):
             raise TypeError(
-                f"Invalid type for automation. Expected Type[AbstractAutomation]. Got {type(automation)}"
+                (
+                    "Invalid type for automation. "
+                    "Expected Type[AbstractAutomation]. "
+                    f"Got {type(automation)}"
+                )
             )
         self.automations += (automation,)
         return self
