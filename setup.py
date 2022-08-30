@@ -1,3 +1,5 @@
+# flake8: noqa
+
 from setuptools import setup
 
 with open("README.md", "r") as fh:
