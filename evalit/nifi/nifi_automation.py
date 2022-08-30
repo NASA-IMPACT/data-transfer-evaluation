@@ -230,7 +230,7 @@ class NifiAutomation(AbstractAutomation):
         print("Template successfully uploaded")
         id_pos = r.text.find("<id>")
         id_end_pos = r.text.find("</id>")
-        template_id = r.text[id_pos + 4: id_end_pos]
+        template_id = r.text[id_pos + 4 : id_end_pos]
         print("Template id: " + template_id)
 
         template_load_json = {
