@@ -34,7 +34,8 @@ class NifiAutomation(AbstractAutomation):
 
         ```nifi_dir```: ```Union[str, pathlib.Path]```
                 Path to the nifi installation directory
-                (Normally, we get this from the environment variable `NIFI_INSTALLATION`)
+                (Normally, we get this from the environment
+                variable `NIFI_INSTALLATION`)
 
 
         ```files```: ```List[str]```
@@ -56,7 +57,8 @@ class NifiAutomation(AbstractAutomation):
     Note:
         1) Since, nifi transfers happen in async mode -- jobs are submitted
         to initiate transfer -- we need to parse nifi log every N seconds
-        (see `nifi_log_poll_time` kwarg to `NifiAutomation.run_automation(...)`)
+        (see `nifi_log_poll_time` kwarg to 
+        `NifiAutomation.run_automation(...)`)
         to figure out the status of the transfer. This poll-based log parsing
         is also sued in `MftAutomation`.
     """
@@ -126,7 +128,8 @@ class NifiAutomation(AbstractAutomation):
         )
         logger.debug(f"Using template: {template_file}")
 
-        log_file_location = os.path.join(self.nifi_dir, self._RESOURCES_CFG["log"])
+        log_file_location = os.path.join(self.nifi_dir,
+                                         self._RESOURCES_CFG["log"])
         logger.debug(f"log_file_location = {log_file_location}")
 
         source_token = self.config["source_token"]
@@ -140,8 +143,6 @@ class NifiAutomation(AbstractAutomation):
         dest_s3_endpoint = self.config["dest_s3_endpoint"]
         dest_s3_bucket = self.config["dest_s3_bucket"]
         dest_s3_region = self.config["dest_s3_region"]
-
-        total_files = len(self.files)
 
         session_uuid = random_string(10)
         logger.info(f"Session UUID: {session_uuid}")
@@ -173,7 +174,8 @@ class NifiAutomation(AbstractAutomation):
         )
 
         process_groups_json = r.json()
-        old_connections = process_groups_json["processGroupFlow"]["flow"]["connections"]
+        old_connections = process_groups_json["processGroupFlow"]
+        ["flow"]["connections"]
 
         for connection in old_connections:
             if self.debug:
@@ -186,7 +188,8 @@ class NifiAutomation(AbstractAutomation):
             if self.debug:
                 print("Status", r.status_code)
 
-        old_processors = process_groups_json["processGroupFlow"]["flow"]["processors"]
+        old_processors = process_groups_json["processGroupFlow"]
+        ["flow"]["processors"]
         for processor in old_processors:
             if self.debug:
                 print("Deleting processor ", processor["id"])
@@ -206,9 +209,11 @@ class NifiAutomation(AbstractAutomation):
         for template in templates:
             if self.debug:
                 print(
-                    "Deleting template ", template["id"], template["template"]["name"]
+                    "Deleting template ", template["id"],
+                    template["template"]["name"]
                 )
-            requests.delete(nifi_url + "/templates/" + template["id"], verify=False)
+            requests.delete(nifi_url + "/templates/" +
+            template["id"], verify=False)
 
             # Upload the template file
 
@@ -220,7 +225,8 @@ class NifiAutomation(AbstractAutomation):
             )
         }
         r = requests.post(
-            nifi_url + "/process-groups/" + process_group_id + "/templates/upload",
+            nifi_url + "/process-groups/" + process_group_id +
+            "/templates/upload",
             files=template_upload_json,
             verify=False,
         )
@@ -238,7 +244,8 @@ class NifiAutomation(AbstractAutomation):
             "disconnectedNodeAcknowledged": "false",
         }
         r = requests.post(
-            nifi_url + "/process-groups/" + process_group_id + "/template-instance",
+            nifi_url + "/process-groups/" + process_group_id +
+            "/template-instance",
             json=template_load_json,
             verify=False,
         )
@@ -246,7 +253,8 @@ class NifiAutomation(AbstractAutomation):
         template_json = r.json()
         processor_name_map = {}
         for processor in template_json["flow"]["processors"]:
-            processor_name_map[processor["component"]["name"]] = processor
+            processor_name_map[processor["component"]
+            ["name"]] =processor
 
         # Updating the credentials
 
@@ -389,7 +397,8 @@ class NifiAutomation(AbstractAutomation):
                 },
                 "state": "STOPPED",
             },
-            "revision": {"version": start_log_processor["revision"]["version"]},
+            "revision": {"version": start_log_processor["revision"]
+                         ["version"]},
             "disconnectedNodeAcknowledged": "false",
         }
         r = requests.put(
@@ -424,7 +433,8 @@ class NifiAutomation(AbstractAutomation):
                 },
                 "state": "STOPPED",
             },
-            "revision": {"version": complete_log_processor["revision"]["version"]},
+            "revision": {"version": complete_log_processor["revision"]
+                         ["version"]},
             "disconnectedNodeAcknowledged": "false",
         }
         r = requests.put(
@@ -456,7 +466,8 @@ class NifiAutomation(AbstractAutomation):
             poll_wait_time=kwargs.get("nifi_log_poll_time", 5) or 5,
         )
         logger.debug(
-            f"Delta time for {self.__classname__} = {time.time() - start_automation}"
+            f"Delta time for {self.__classname__} = "
+            f"{time.time() - start_automation}"
         )
         return vals
 
@@ -502,7 +513,8 @@ class NifiAutomation(AbstractAutomation):
         # till we all the `nfiles` are detected to be "transferred".
         while end_counter < nfiles:
             logger.debug(
-                f"[{self.__classname__}] log parser polling... {end_counter}/{nfiles} files transferred!"
+                f"[{self.__classname__}] log parser polling..."
+                f"{end_counter}/{nfiles} files transferred!"
             )
             time.sleep(poll_wait_time)
             # read file line by line
@@ -516,11 +528,13 @@ class NifiAutomation(AbstractAutomation):
                         )
                         fname = line.split(session_uuid)[1].strip()
                         is_start = (
-                            line.split(session_uuid)[0].find(self._LOG_START_PHRASE)
+                            line.split(session_uuid)[0].
+                            find(self._LOG_START_PHRASE)
                             > -1
                         )
                         is_complete = (
-                            line.split(session_uuid)[0].find(self._LOG_COMPLETE_PHRASE)
+                            line.split(session_uuid)[0].
+                            find(self._LOG_COMPLETE_PHRASE)
                             > -1
                         )
 
