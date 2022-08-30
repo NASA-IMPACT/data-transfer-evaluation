@@ -1,11 +1,7 @@
 from __future__ import annotations
 
-import copy
-import os
-import random
 import re
 import subprocess
-import tempfile
 from dataclasses import dataclass
 from typing import List, Optional
 
@@ -52,8 +48,10 @@ class ShellExecutor:
         assert not self.is_dangerous_command(commands)
 
         exdto = ExecutionDTO(cmd=commands, output=[], errors=[])
-        with subprocess.Popen(
-            commands, shell=False, stdout=subprocess.PIPE, stderr=subprocess.STDOUT
+        with subprocess.Popen(commands,
+                              shell=False,
+                              stdout=subprocess.PIPE,
+                              stderr=subprocess.STDOUT
         ) as proc:
             (out, err) = proc.communicate()
             exdto.output = out.decode("utf-8").split("\n")
