@@ -132,7 +132,8 @@ class AbstractAutomation(ABC):
 
         Args:
             ```kwargs```: ```Any```
-                extra keyword arguments that can be used for the transfer process
+                extra keyword arguments that can be used
+                for the transfer process
 
         Returns:
             Tuple of `structures.TransferDTO` objects
@@ -281,7 +282,8 @@ class AbstractAutomation(ABC):
 
 class AbstractController(ABC):
     """
-    This component encapsulates all the automation component into a single container.
+    This component encapsulates all the automation 
+    component into a single container.
 
     The `run(...)` method is used for computing downstream tasks like:
         - calculating throughput

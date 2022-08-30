@@ -20,15 +20,16 @@
 * Open the first terminal (say B)
 * Go to the emulate bucket directory (say /tmp/transfer-eval)
 * Set the username and password in this command that we will use for the authentication while transferring + run the source server (`MINIO_ROOT_USER=<username> MINIO_ROOT_PASSWORD=<password> minio server ./<path> --address :<port>`)
-* This will run the destination bucket server at port <port> Eg:  ```MINIO_ROOT_USER=admin MINIO_ROOT_PASSWORD=password minio server ./dest --address :8080```
+* This will run the destination bucket server at port <port> Eg:  ```MINIO_ROOT_USER=admin MINIO_ROOT_PASSWORD=password minio server ./dest --address :8090```
 
 ## Emulate dummy source files
 
 * Use any UNIX tool to create a dummy file (it can be anything).
 * For brevity, we use `dd` command
 ```bash
-dd if=/dev/zero of=/tmp/transfer-eval/src/testfile.1 bs=1024 count=1000000 This creates a dummy file ~1GB
+dd if=/dev/zero of=/tmp/transfer-eval/src/testfile.1 bs=1024 count=1000000
 ```
+*  This creates a dummy file ~1GB
 
 or
 

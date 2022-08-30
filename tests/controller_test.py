@@ -1,9 +1,12 @@
 import multiprocessing
 import os
 
+import evalit
+
+print(f"automation pkg version: {evalit.__version__}")
+
 from loguru import logger
 
-import evalit
 from evalit.api import BaseAPIs as EvalBases
 from evalit.api import (
     MFTAutomation,
@@ -11,8 +14,6 @@ from evalit.api import (
     RcloneAutomation,
     StandardAutomationController,
 )
-
-print(f"automation pkg version: {evalit.__version__}")
 
 ncpus = multiprocessing.cpu_count()
 logger.info(f"N cpus = {ncpus}")
@@ -23,7 +24,8 @@ mft_installation = os.getenv("MFT_INSTALLATION")
 dt_config = os.getenv("CFG_YAML", "tests/config.yaml")
 dt_config = EvalBases.AbstractAutomation.load_yaml(dt_config)
 logger.debug(
-    f"Redacted config:: {EvalBases.AbstractAutomation._get_redacted_cfg(dt_config)}"
+    f"Redacted config::"
+    f"{EvalBases.AbstractAutomation._get_redacted_cfg(dt_config)}"
 )
 
 filemap = StandardAutomationController.get_source_file_map(dt_config)
