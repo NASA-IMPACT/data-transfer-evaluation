@@ -1,8 +1,6 @@
-import os
 import tempfile
 import time
 from datetime import datetime
-from pathlib import Path
 from typing import Dict, Optional, Sequence, TextIO, Tuple, Union
 
 import urllib3
