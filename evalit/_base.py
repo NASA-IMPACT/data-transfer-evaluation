@@ -282,7 +282,7 @@ class AbstractAutomation(ABC):
 
 class AbstractController(ABC):
     """
-    This component encapsulates all the automation 
+    This component encapsulates all the automation
     component into a single container.
 
     The `run(...)` method is used for computing downstream tasks like:

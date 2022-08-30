@@ -1,12 +1,9 @@
 import multiprocessing
 import os
 
-import evalit
-
-print(f"automation pkg version: {evalit.__version__}")
-
 from loguru import logger
 
+import evalit
 from evalit.api import BaseAPIs as EvalBases
 from evalit.api import (
     MFTAutomation,
@@ -14,6 +11,8 @@ from evalit.api import (
     RcloneAutomation,
     StandardAutomationController,
 )
+
+print(f"automation pkg version: {evalit.__version__}")
 
 ncpus = multiprocessing.cpu_count()
 logger.info(f"N cpus = {ncpus}")
