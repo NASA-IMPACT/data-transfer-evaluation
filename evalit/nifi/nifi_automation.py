@@ -57,7 +57,7 @@ class NifiAutomation(AbstractAutomation):
     Note:
         1) Since, nifi transfers happen in async mode -- jobs are submitted
         to initiate transfer -- we need to parse nifi log every N seconds
-        (see `nifi_log_poll_time` kwarg to 
+        (see `nifi_log_poll_time` kwarg to
         `NifiAutomation.run_automation(...)`)
         to figure out the status of the transfer. This poll-based log parsing
         is also sued in `MftAutomation`.
@@ -213,7 +213,7 @@ class NifiAutomation(AbstractAutomation):
                     template["template"]["name"]
                 )
             requests.delete(nifi_url + "/templates/" +
-            template["id"], verify=False)
+                            template["id"], verify=False)
 
             # Upload the template file
 
@@ -234,7 +234,7 @@ class NifiAutomation(AbstractAutomation):
         print("Template successfully uploaded")
         id_pos = r.text.find("<id>")
         id_end_pos = r.text.find("</id>")
-        template_id = r.text[id_pos + 4 : id_end_pos]
+        template_id = r.text[id_pos + 4: id_end_pos]
         print("Template id: " + template_id)
 
         template_load_json = {
@@ -254,7 +254,7 @@ class NifiAutomation(AbstractAutomation):
         processor_name_map = {}
         for processor in template_json["flow"]["processors"]:
             processor_name_map[processor["component"]
-            ["name"]] =processor
+                               ["name"]] = processor
 
         # Updating the credentials
 
