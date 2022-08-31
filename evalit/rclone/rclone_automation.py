@@ -4,14 +4,13 @@ from datetime import datetime
 from typing import Dict, Optional, Sequence, TextIO, Tuple, Union
 
 import urllib3
-
-urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
-
 from loguru import logger
 
 from .._base import AbstractAutomation
 from ..misc.shell import ShellExecutor
 from ..structures import TYPE_PATH, TransferDTO
+
+urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 
 class RcloneAutomation(AbstractAutomation):
@@ -136,9 +135,9 @@ class RcloneAutomation(AbstractAutomation):
         """
         start_automation = time.time()
         source_s3_bucket = self.config["source_s3_bucket"]
-        source_s3_region = self.config["source_s3_region"]
+        # source_s3_region = self.config["source_s3_region"]
         dest_s3_bucket = self.config["dest_s3_bucket"]
-        dest_s3_region = self.config["dest_s3_region"]
+        # dest_s3_region = self.config["dest_s3_region"]
 
         # temp files
         rclone_log_file = tempfile.NamedTemporaryFile(
@@ -169,7 +168,7 @@ class RcloneAutomation(AbstractAutomation):
         ]
 
         start = time.time()
-        exdto = self.shell_executor(cmd)
+        _ = self.shell_executor(cmd)
         logger.debug(f"Execution took {time.time()-start} seconds.")
 
         # this deletes the temp file also

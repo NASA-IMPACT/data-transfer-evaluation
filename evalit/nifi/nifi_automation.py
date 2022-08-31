@@ -8,13 +8,12 @@ from typing import Dict, Optional, Sequence, Tuple, Union
 
 import requests
 import urllib3
-
-urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
-
 from loguru import logger
 
 from .._base import AbstractAutomation
 from ..structures import TYPE_PATH, TransferDTO
+
+urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 
 class NifiAutomation(AbstractAutomation):
@@ -116,7 +115,7 @@ class NifiAutomation(AbstractAutomation):
 
         random_string = lambda string_length: "".join(
             random.choice(string.ascii_lowercase) for i in range(string_length)
-        )
+        )  # noqa: E731
 
         # nifi_url = "https://localhost:8443/nifi-api"
         nifi_url = self.nifi_url
