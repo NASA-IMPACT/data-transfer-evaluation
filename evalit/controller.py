@@ -79,7 +79,7 @@ class StandardAutomationController(AbstractController):
                 )
             )
             if self.debug:
-                logger.debug(f"[{automation.__classname__}]" f"Results :: {results}")
+                logger.debug(f"[{automation.__classname__}] | Results :: {results}")
 
             # filter results based on filemap
             results_filemapped = tuple(filter(lambda r: r.fname in filemap, results))
