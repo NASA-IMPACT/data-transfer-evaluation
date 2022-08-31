@@ -113,9 +113,9 @@ class NifiAutomation(AbstractAutomation):
         start_automation = time.time()
         logger.info(f"Running automation for {self.__classname__}")
 
-        random_string = lambda string_length: "".join(
+        random_string = lambda string_length: "".join(  # noqa: E731
             random.choice(string.ascii_lowercase) for i in range(string_length)
-        )  # noqa: E731
+        )
 
         # nifi_url = "https://localhost:8443/nifi-api"
         nifi_url = self.nifi_url
