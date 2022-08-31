@@ -23,7 +23,10 @@ mft_installation = os.getenv("MFT_INSTALLATION")
 dt_config = os.getenv("CFG_YAML", "tests/config.yaml")
 dt_config = EvalBases.AbstractAutomation.load_yaml(dt_config)
 logger.debug(
-    f"Redacted config::" f"{EvalBases.AbstractAutomation._get_redacted_cfg(dt_config)}"
+    (
+        f"Redacted config::"
+        f"{EvalBases.AbstractAutomation._get_redacted_cfg(dt_config)}"
+    )
 )
 
 filemap = StandardAutomationController.get_source_file_map(dt_config)
