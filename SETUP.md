@@ -1,28 +1,28 @@
 # Minio setup
-
-## Minio manual setup
 * Minio is used to setup local S3 servers
 * Download minio server binary from https://min.io/download
 * Make sure to add minio binary to any of the system paths (/home/<user>/bin/, /usr/local/bin/ or /bin/)
+
+## Minio manual setup
 * Create a local folder/directory that will be emulated as the buckets
 * Create a temporary directory say ```mkdir /tmp/transfer-eval/```
 * Create 2 directories inside it: ```mkdir /tmp/transfer-eval/src``` & ```mkdir /tmp/transfer-eval/dest```
 
 
-## Setup Source Buckets
+### Setup Source Buckets
 * Open the first terminal (say A)
 * Go to the emulate bucket directory (say /tmp/transfer-eval)
 * Set the username and password in this command that we will use for the authentication while transferring + run the source server (`MINIO_ROOT_USER=<username> MINIO_ROOT_PASSWORD=<password> minio server ./<path> --address :<port>`)
 * This will run the source bucket server at port <port> Eg:  ```MINIO_ROOT_USER=admin MINIO_ROOT_PASSWORD=password minio server ./src --address :8080```
 
 
-## Setup Destination Buckets
-* Open the first terminal (say B)
+### Setup Destination Buckets
+* Open the second terminal (say B)
 * Go to the emulate bucket directory (say /tmp/transfer-eval)
 * Set the username and password in this command that we will use for the authentication while transferring + run the source server (`MINIO_ROOT_USER=<username> MINIO_ROOT_PASSWORD=<password> minio server ./<path> --address :<port>`)
 * This will run the destination bucket server at port <port> Eg:  ```MINIO_ROOT_USER=admin MINIO_ROOT_PASSWORD=password minio server ./dest --address :8090```
 
-## Emulate dummy source files
+### Emulate dummy source files
 
 * Use any UNIX tool to create a dummy file (it can be anything).
 * For brevity, we use `dd` command

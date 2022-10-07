@@ -73,7 +73,7 @@ dest_s3_region: "us-east-1"
 * Create a transfer configuration YAML file (see the above "Configuration Setup" section for reference)
 * Make sure you have s3 src/dest buckets (see [setup guide](SETUP.md) for details; or just run `scripts/buckets.sh` script)
 * Make sure minio servers are up and running (see [setup guide](SETUP.md))
-* Before running this, you need to export few environment variables
+* Export below environment variables
     - `CFG_YAML`: Path to the transfer YAML config.yaml file
     - `NIFI_INSTALLATION`: Path to nifi base directory (eg: `/home/<username>/nifi/nifi-1.15.3/`)
     - `MFT_INSTALLATION` Path to mft base directory (eg: `/home/<username>/airawata-mft/`)
