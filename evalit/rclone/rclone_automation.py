@@ -133,10 +133,11 @@ class RcloneAutomation(AbstractAutomation):
             - end_time
             - transferer ("rclone")
         """
+
         start_automation = time.time()
         source_s3_bucket = self.config["source_s3_bucket"]    
         dest_s3_bucket = self.config["dest_s3_bucket"]
-    
+
         # temp files
         rclone_log_file = tempfile.NamedTemporaryFile(
             mode="w+", prefix="rclone_", suffix=".log", delete=False

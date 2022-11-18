@@ -103,7 +103,9 @@ class StandardAutomationController(AbstractController):
             logger.info(f"[{automation.__classname__}]" f"Throughput = {throughput}")
             controller_result[automation.__classname__] = {"throughput": throughput}
 
-            self.generate_graph(kwargs.get("output_dir", "tmp/"), automation.__classname__, results)
+            self.generate_graph(
+                kwargs.get("output_dir", "tmp/"), automation.__classname__, results
+            )
 
         logger.info(
             f"Controller took total {time.time()-controller_start} seconds to run!"

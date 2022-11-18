@@ -74,6 +74,6 @@ results = controller.run(
     nifi_log_poll_time=5,
     mft_log_poll_time=5,
     mft_log_parser_njobs=ncpus,
-    output_dir="tmp/"
+    output_dir="tmp/",
 )
 logger.info(results)
