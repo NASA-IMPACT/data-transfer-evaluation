@@ -135,6 +135,7 @@ class RcloneAutomation(AbstractAutomation):
         """
 
         start_automation = time.time()
+
         source_s3_bucket = self.config["source_s3_bucket"]    
         dest_s3_bucket = self.config["dest_s3_bucket"]
 
