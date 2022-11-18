@@ -15,8 +15,6 @@ class TransferDTO:
     transferer: str
 
     # holds start/end time for the file transferred
-    # start_time: datetime = field(default_factory=lambda:
-    # datetime.utcfromtimestamp(0))
     start_time: datetime = None
 
     # end_time: datetime = field(default_factory=lambda: datetime.now())

@@ -103,10 +103,10 @@ class StandardAutomationController(AbstractController):
             logger.info(f"[{automation.__classname__}]" f"Throughput = {throughput}")
             controller_result[automation.__classname__] = {"throughput": throughput}
 
-            self.generate_graph("tmp/", automation.__classname__, results)
+            self.generate_graph(kwargs.get("output_dir", "tmp/"), automation.__classname__, results)
 
         logger.info(
-            f"Controller took total {time.time()-controller_start}" f"seconds to run!"
+            f"Controller took total {time.time()-controller_start} seconds to run!"
         )
         return controller_result
 
@@ -125,7 +125,7 @@ class StandardAutomationController(AbstractController):
                 is computed for the transfer.
         """
         if not MATPLOTLIB:
-            logger.warning("Matplotlib not found. " + "Can't generate figure! Halting!")
+            logger.warning("Matplotlib not found. can't generate figure! Halting!")
             return
 
         times = self.dtotimes_to_times(timesdto)
@@ -168,6 +168,16 @@ class StandardAutomationController(AbstractController):
 
     @staticmethod
     def dtotimes_to_times(timesdto: Tuple[TransferDTO]) -> List[List[float]]:
+        """
+        Converts TransferDTO object structure into a floating point array
+        which represents total number of seconds betweeen two timestamps.
+
+        Args:
+            ```timesdto```: ```Tuple[TransferDTO]```
+                List of TransferDTO objects
+        Returns:
+            ```List[List[float]]``` delta seconds
+        """
         times = map(
             lambda d: [
                 (d.start_time - datetime(1970, 1, 1)).total_seconds(),

@@ -50,8 +50,8 @@ class AbstractAutomation(ABC):
         .. code-block: yaml
 
                 ---
-                source_token: "<username>"
-                source_secret: "<password>"
+                source_token: "<minio_username / aws_access_key_id>"
+                source_secret: "<minio_password / aws_secret_access_key>"
                 source_s3_endpoint: "http://127.0.0.1:8080"
                 source_s3_bucket: "src"
                 source_s3_region: "us-east-1"
