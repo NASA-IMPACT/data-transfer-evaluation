@@ -3,9 +3,7 @@
 * Minio is used to setup local S3 servers
 * Download minio server binary from https://min.io/download
 * Make sure to add minio binary to any of the system paths (/home/<user>/bin/, /usr/local/bin/ or /bin/)
-* Check the configuration section in [README](README.md) for creating the config. Once we have the YAML config, we can use it to initialize minio servers.
-* Set `CFG_YAML` environment variable (e.g: `export CFG_YAML=<path_to_yaml_file>`)
-* Set `MINIO_BIN` path variable (e.g `export MINIO_BIN=<path_to_minio_binary>`)
+* Set MINIO_BIN path variable (e.g export MINIO_BIN=<path_to_minio_binary>)
 
 Below are two ways to setup Minio. Please ensure that above steps are performed before proceeding to further setup process.
 1. Automated Setup
@@ -15,7 +13,9 @@ Below are two ways to setup Minio. Please ensure that above steps are performed 
 
 ### Minio automated setup scripts
 
-* The scripts to setup the minio source and destination servers can be found under `/scripts` folder
+* The scripts to setup the minio source and destination servers can be found under `/scripts` folder.
+* Check the configuration section in [README](README.md) for creating the config. Once we have the YAML config, we can use it to initialize minio servers.
+* Set `CFG_YAML` environment variable (e.g: `export CFG_YAML=<path_to_yaml_file>`)
 * Execute `./buckets.sh` to create the buckets
 * Execute `./start-minio.sh` to start the source and destination servers
 

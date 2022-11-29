@@ -80,3 +80,15 @@ dest_s3_region: "us-east-1"
 * Execute ```python tests/controller_test.py``` to initiate the transfer
 
 > Note: You can add/modify the automation components params. See `tests/controller_test.py`.
+
+> Possible Errors:
+    * `filemap` empty while running `tests/controller_test.py`
+        - Solution: minio versioning error
+        - Download the minio (version: RELEASE.2022-05-26T05-48-41Z) from https://dl.minio.io/server/minio/release/
+        - make sure the binary is made executable (e.g: `chmod +x minio`)
+    * `cert error`
+        - Due to version mismatch with metadata cache in temp folder
+        - Delete the cache in the temp folder and test again
+    * Environment variable not found
+        - Please ensure that you export all the environment variables before running the setup.
+    
