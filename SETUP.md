@@ -1,9 +1,39 @@
 # Minio setup
+
 * Minio is used to setup local S3 servers
 * Download minio server binary from https://min.io/download
 * Make sure to add minio binary to any of the system paths (/home/<user>/bin/, /usr/local/bin/ or /bin/)
+* Check the configuration section in [README](README.md) for creating the config. Once we have the YAML config, we can use it to initialize minio servers.
+* Set `CFG_YAML` environment variable (e.g: `export CFG_YAML=<path_to_yaml_file>`)
+* Set `MINIO_BIN` path variable (e.g `export MINIO_BIN=<path_to_minio_binary>`)
+
+Below are two ways to setup Minio. Please ensure that above steps are performed before proceeding to further setup process.
+1. Automated Setup
+2. Manual Setup
+
+## Automated Setup
+
+### Minio automated setup scripts
+
+* The scripts to setup the minio source and destination servers can be found under `/scripts` folder
+* Execute `./buckets.sh` to create the buckets
+* Execute `./start-minio.sh` to start the source and destination servers
+
+### Create dummy buckets automatically
+
+- Open a Terminal and create temporary buckets: `./buckets.sh` 
+- `/tmp/transfer-eval/src/`
+- `/tmp/transfer-eval/dest/`
+
+### Run minio source/destination servers directly using YAML config
+- Open a Terminal and start source bucket server: `./scripts/start-minio.sh src`
+- Open another Terminal and start destination bucket server: `./scripts/start-minio.sh dest`
+
+> Note: The servers aren't daemon. If you close the terminal, server might close. So, better use tmux. Or use 2 terminal instances to run these 2 servers.
+
 
 ## Minio manual setup
+
 * Create a local folder/directory that will be emulated as the buckets
 * Create a temporary directory say ```mkdir /tmp/transfer-eval/```
 * Create 2 directories inside it: ```mkdir /tmp/transfer-eval/src``` & ```mkdir /tmp/transfer-eval/dest```
@@ -30,37 +60,6 @@
 dd if=/dev/zero of=/tmp/transfer-eval/src/testfile.1 bs=1024 count=1000000
 ```
 *  This creates a dummy file ~1GB
-
-or
-
-## Minio automated setup scripts
-
-* The scripts to setup the minio source and destination servers can be found under `/scripts` folder
-* Execute `./buckets.sh` to create the buckets
-* Execute `./start-minio.sh` to start the source and destination servers
-
-### Create dummy buckets automatically
-
-`./buckets.sh` creates temporary buckets:
-- `/tmp/transfer-eval/src/`
-- `/tmp/transfer-eval/dest/`
-
-### Run minio source/destination servers directly using YAML config
-
-Check the configuration section in [README](README.md) for creating the config.
-Once we have the YAML config, we can use it to directly initialize minio servers.
-
-Also, the path to minio binary can be controlled by the environment variable `MINIO_BIN`.
-Eg: `export MINIO_BIN=~/bin/minio` (this is also the default path in the script.)
-
-- Export the path to YAML to the environment variable `CFG_YAML`:
-    - `export CFG_YAML=<path_to_yaml_file>`
-- Set `MINIO_BIN` path variable
-- Start source bucket server: `./scripts/start-minio.sh src`
-- Start destination bucket server: `./scripts/start-minio.sh dest`
-
-
-> Note: The servers aren't daemon. If you close the terminal, server might close. So, better use tmux. Or use 2 terminal instances to run these 2 servers.
 
 # Rclone Installation
 
