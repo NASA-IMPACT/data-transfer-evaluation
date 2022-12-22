@@ -1,3 +1,5 @@
+# flake8: noqa
+
 from setuptools import setup
 
 with open("README.md", "r") as fh:
@@ -19,7 +21,7 @@ setup(
     author_email="np0069@uah.edu",
     # license="MIT",
     python_requires=">=3.7",
-    packages=["evalit", "evalit.rclone", "evalit.nifi", "evalit.mft"],
+    packages=["evalit", "evalit.rclone", "evalit.nifi", "evalit.mft", "evalit.misc"],
     install_requires=required,
     classifiers=[
         "Intended Audience :: Education",

@@ -9,6 +9,7 @@ tmp/
 data/
 temp/
 evalit/rclone/rclone.conf
+.minio.sys/
 
 # Compiled source #
 ###################

@@ -26,10 +26,44 @@ class AbstractAutomation(ABC):
         - `nifi.nifi_automation.NifiAutomation`
         - `mft.mft_automation.MFTAutomation`
 
-    Each automation component should implement `rclone_automation` method
+    Each automation component should implement `rclone_automation(...)` method
     and must return `Tuple[TransferDTO]` data structure.
+
+    Args:
+        ```config```: ```Union[str, pathlib.Path, dict]```
+            The input yaml configuration for the transfer.
+            If path, then it will load the config from yaml loader
+            Else, incoming dictionary is used as the config
+
+        ```files```: ```Optional[Union[str, Path]]```
+            List of files to benchmark.
+            If provided, only these files will be used.
+            Else, all the files from the source bucket are used
+            (Defaults to None)
+
+        ```debug```: ```bool```
+                Flag used for debugging purpose.
+                Defaults to False
+
+    Example Structure of YAML should be:
+
+        .. code-block: yaml
+
+                ---
+                source_token: "<minio_username / aws_access_key_id>"
+                source_secret: "<minio_password / aws_secret_access_key>"
+                source_s3_endpoint: "http://127.0.0.1:8080"
+                source_s3_bucket: "src"
+                source_s3_region: "us-east-1"
+
+                dest_token: "<username>"
+                dest_secret: "<password>"
+                dest_s3_endpoint: "http://127.0.0.1:8090"
+                dest_s3_bucket: "dest"
+                dest_s3_region: "us-east-1"
     """
 
+    # these keys are used for validation of incoming config
     _CFG_KEYS = {
         "src": [
             "source_token",
@@ -56,15 +90,20 @@ class AbstractAutomation(ABC):
     ) -> None:
         """
         Args:
-            `config`: `str` or `pathlib.Path` or `dict`
-                Represents the yaml config for source and destination.
-                If `str` or `pathlib.Path`, yaml path has to be provided.
+            ```config```: ```Union[str, pathlib.Path, dict]```
+                The input yaml configuration for the transfer.
+                If path, then it will load the config from yaml loader
+                Else, incoming dictionary is used as the config
 
-            `files`: `List[str]`
-                List of filenames for transfer
+            ```files```: ```Optional[Union[str, Path]]```
+                List of files to benchmark.
+                If provided, only these files will be used.
+                Else, all the files from the source bucket are used
+                (Defaults to None)
 
-            debug: `bool`
-                Flag to represent debugging mode.
+            ```debug```: ```bool```
+                    Flag used for debugging purpose.
+                    Defaults to False
         """
         assert isinstance(debug, bool)
         self.debug = bool(debug)
@@ -76,17 +115,28 @@ class AbstractAutomation(ABC):
             config = self.load_yaml(config)
         if not isinstance(config, dict):
             raise TypeError(
-                f"Invalid type for config. Expected Dict[str, str]. Got {type(config)}"
+                (
+                    f"Invalid type for config. Expected Dict[str, str]. "
+                    f"Got {type(config)}"
+                )
             )
         self.config = copy.deepcopy(config)
         if debug:
-            logger.debug(self.__get_redacted_cfg())
+            logger.debug(self._get_redacted_cfg(self.config))
         self._sanity_check_config(self.config)
 
     @abstractmethod
     def run_automation(self, **kwargs) -> Tuple[TransferDTO]:
         """
-        Main method to start transfer
+        Main entrypoint/method to start transfer
+
+        Args:
+            ```kwargs```: ```Any```
+                extra keyword arguments that can be used
+                for the transfer process
+
+        Returns:
+            Tuple of `structures.TransferDTO` objects
         """
         raise NotImplementedError()
 
@@ -94,11 +144,39 @@ class AbstractAutomation(ABC):
     def load_yaml(config_yaml: TYPE_PATH) -> Dict[str, str]:
         """
         Load config from yaml file!
+
+        Args:
+            ```config_yaml```: ```Union[str, pathlib.Path]```
+                Path to YAML file to be loaded
+
+        Returns:
+            ```Dict[str, str]``` dictionary config
+
+        Example of dictionary structure:
+
+            .. code-block: python
+
+                {
+                    "source_token": <username>,
+                    "source_secret": <password>,
+                    "source_s3_endpoint": "http://127.0.0.1:<PORT_1>",
+                    "source_s3_bucket": "src",
+                    "source_s3_region": "us-east-1",
+                    "dest_token": <username>,
+                    "dest_secret": <password>,
+                    "dest_s3_endpoint": "htt*://127.0.0.1:<PORT_2>",
+                    "dest_s3_bucket": "dest",
+                    "dest_s3_region": "us-east-1",
+                }
         """
         logger.info(f"Loading yaml from {config_yaml}")
         if not isinstance(config_yaml, (str, Path)):
             raise TypeError(
-                f"Invalid type for config_yaml={config_yaml}. Expected type of str or pathlib.Path. Got {type(config_yaml)}"
+                (
+                    f"Invalid type for config_yaml={config_yaml}. "
+                    "Expected type of str or pathlib.Path. "
+                    f"Got {type(config_yaml)}"
+                )
             )
 
         config = {}
@@ -109,7 +187,32 @@ class AbstractAutomation(ABC):
 
     def _sanity_check_config(self, cfg: Dict[str, str]) -> bool:
         """
-        Check if we have sufficient keys in the config dict.
+        Check if we have sufficient keys in the config dict based on the
+        `AbstractAutomation._CFG_KEYS` structure for keys.
+
+        Args:
+            ```cfg```: ```Dict[str, str]```
+                The configuration dictionary for the transfer
+
+        Returns:
+            If everything is fine, it returns True else raise error
+
+        Example of dictionary structure:
+
+            .. code-block: python
+
+                {
+                    "source_token": "a****",
+                    "source_secret": "***s**rd",
+                    "source_s3_endpoint": "ht*p**/127.0**.*:80*0",
+                    "source_s3_bucket": "***",
+                    "source_s3_region": "u****s***",
+                    "dest_token": "*d*i*",
+                    "dest_secret": "p**s****",
+                    "dest_s3_endpoint": "htt*://127.0.*.1:*0**",
+                    "dest_s3_bucket": "**s*",
+                    "dest_s3_region": "u*-e*s***",
+                }
         """
         if self.debug:
             logger.debug(f"cfg => {cfg}")
@@ -123,9 +226,34 @@ class AbstractAutomation(ABC):
     def __classname__(self) -> str:
         return self.__class__.__name__
 
-    def __get_redacted_cfg(self) -> Dict[str, str]:
+    @staticmethod
+    def _get_redacted_cfg(cfg: Dict[str, str]) -> Dict[str, str]:
         """
         Returns the stored config in redacted form.
+
+        Args:
+            ```cfg```: ```Dict[str, str]```
+                Configuratin dictionary
+
+        Returns:
+            `Dict[str, str]` dictionary of same structure, but redacted
+
+        Example of dictionary structure:
+
+            .. code-block: python
+
+                {
+                    "source_token": "a****",
+                    "source_secret": "***s**rd",
+                    "source_s3_endpoint": "ht*p**/127.0**.*:80*0",
+                    "source_s3_bucket": "***",
+                    "source_s3_region": "u****s***",
+                    "dest_token": "*d*i*",
+                    "dest_secret": "p**s****",
+                    "dest_s3_endpoint": "htt*://127.0.*.1:*0**",
+                    "dest_s3_bucket": "**s*",
+                    "dest_s3_region": "u*-e*s***",
+                }
         """
 
         def _redact_string(text, nchars=7):
@@ -133,25 +261,40 @@ class AbstractAutomation(ABC):
             nchars = nchars or 0
             nchars = min(nchars, n)
             indices = random.choices(list(range(n)), k=nchars)
-            return "".join(["*" if i in indices else c for i, c in enumerate(text)])
+            return "".join(
+                ["*" if i in indices else c for i, c in enumerate(text)]
+            )  # mask
 
-        res = copy.deepcopy(self.config)
+        res = copy.deepcopy(cfg)
         res = map(lambda x: (x[0], _redact_string(x[1])), res.items())
         return dict(res)
 
     def __str__(self) -> str:
         params = copy.deepcopy(self.__dict__)
-        params.pop("config", None)
         params.pop("files", None)
-        return f"[{self.__classname__}] | [Redacted config] = {self.__get_redacted_cfg()} | [params] => {params}"
+        cfg = params.pop("config", {})
+        return (
+            f"[{self.__classname__}] | "
+            f"[Redacted config] = {self._get_redacted_cfg(cfg)} | "
+            f"[params] => {params}"
+        )
 
 
 class AbstractController(ABC):
     """
-    This component encapsulates all the automation component.
+    This component encapsulates all the automation
+    component into a single container.
+
     The `run(...)` method is used for computing downstream tasks like:
         - calculating throughput
         - generating graphs
+
+    Args:
+        ```automations```: ```Optional[Tuple[Type[AbstractAutomation]]]```
+            List of automation objects to be used for transfers.
+            Each automation object is of base type `AbstractAutomation`
+        ```debug```: ```bool```
+            Flag for debugging mode
     """
 
     def __init__(
@@ -166,6 +309,11 @@ class AbstractController(ABC):
 
     @abstractmethod
     def run(self, **kwargs) -> Any:
+        """
+        Main/entrypoint method to run the automation.
+        It goes through all the available `Type[AbstractAutomation]` objects
+        and perform the transfer, track files and benchmark.
+        """
         raise NotImplementedError()
 
     @staticmethod
@@ -173,8 +321,14 @@ class AbstractController(ABC):
         """
         A helper method to get all the available files in the source.
 
+        Args:
+            ```cfg```: ```Union[str, pathlib.Path]```
+                Path to cfg
+
         Returns:
-            A dictionary mapping from filename to file metadata.
+            A dictionary mapping from filename to file metadata
+            in the source bucket.
+
             The `size` metadata is in GB (GigaBytes).
 
             Example:
@@ -190,7 +344,7 @@ class AbstractController(ABC):
             cfg = AbstractAutomation.load_yaml(cfg)
 
         # importing at runtime, as it's not a necessity to use this function
-        import boto3
+        import boto3  # noqa
 
         logger.debug(f"Boto3 version: {boto3.__version__}")
 
@@ -212,10 +366,25 @@ class AbstractController(ABC):
     def sanity_check_automations(
         self, automations: Tuple[Type[AbstractAutomation]]
     ) -> bool:
+        """
+        Check if the automation objects are valid types.
+
+        Args:
+            ```automations```: ```Tuple[Type[AbstractAutomation]]```
+                Tuple of automation objects to check
+
+        Returns:
+            If successful, returns True.
+            Else, raises error.
+        """
         for automation in automations:
             if not isinstance(automation, AbstractAutomation):
                 raise TypeError(
-                    f"Invalid type for automation={automation}. Expected Type[AbstractAutomation]. Got {type(automation)}"
+                    (
+                        f"Invalid type for automation={automation}. "
+                        "Expected Type[AbstractAutomation]. "
+                        f"Got {type(automation)}"
+                    )
                 )
         return True
 
@@ -223,11 +392,22 @@ class AbstractController(ABC):
         self, automation: Type[AbstractAutomation]
     ) -> Type[AbstractController]:
         """
-        Add single automation
+        Add single automation to the controller pipeline.
+
+        Args:
+            ```automation```: ```Type[AbstractAutomation]```
+                An automation object to add to the controller pipeline
+
+        Returns:
+            Returns the self (controller) object itself.
         """
         if not isinstance(automation, AbstractAutomation):
             raise TypeError(
-                f"Invalid type for automation. Expected Type[AbstractAutomation]. Got {type(automation)}"
+                (
+                    "Invalid type for automation. "
+                    "Expected Type[AbstractAutomation]. "
+                    f"Got {type(automation)}"
+                )
             )
         self.automations += (automation,)
         return self
@@ -236,7 +416,14 @@ class AbstractController(ABC):
         self, automations: Tuple[Type[AbstractAutomation]]
     ) -> Type[AbstractController]:
         """
-        Add multiple automations
+        Add multiple automations to the controller pipeline.
+
+        Args:
+            ```automations```: ```Tuple[Type[AbstractAutomation]]```
+                Tuple of the automation objects to add
+
+        Returns:
+            Returns the self (controller) object itself.
         """
         for automation in automations:
             self = self.add_automation(automation)

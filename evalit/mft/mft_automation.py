@@ -15,8 +15,35 @@ from ..structures import TYPE_PATH, TransferDTO
 class MFTAutomation(AbstractAutomation):
     """
     This is the data transfer automation component for MFT.
+    This acts as an interface to `nifi` server.
+    (See installation/setup guide for nifi)
+
+    Args:
+
+        ```config```: ```Union[str, pathlib.Path, Dict[str, str]]```
+                Configuration for the transfer repo
+
+        ```mft_dir```: ```Union[str, pathlib.Path]```
+                Path to the mft installation directory
+                (Normally, we get this from the environment variable `MFT_INSTALLATION`)
+
+        ```files```: ```List[str]```
+            List of filenames to be transferred.
+            (Currently it's not used in RcloneAutomation)
+
+        ```shell_executor```: ```misc.shell.ShellExecutor```
+            A misc component to execute external shell commands.
+
+        ```njobs```: ```int```
+            Number of parallel jobs to be used for mft job submission
+            and log parser
+
+        ```debug```: ```bool```
+            Debug mode flag. Defaults to False.
+
     """
 
+    # these are used for parsing nifi log
     _LOG_START_PHRASE = "STARTING"
     _LOG_COMPLETE_PHRASE = "COMPLETED"
 
@@ -107,7 +134,21 @@ class MFTAutomation(AbstractAutomation):
 
     def submit_transfer(
         self, file_name: str, source_storage_id: str, dest_storage_id: str
-    ):
+    ) -> Tuple[str, str]:
+        """
+        Submit file for transfer through mft agent.
+
+        Args:
+            ```file_name```: ```str```
+                Name of the file to submit to mft for transfer
+            ```source_storage_id```: ```str```
+                Storage id for souce bucket
+            ```dest_storage_id```: ```str```
+                Storage id for destination bucket
+
+        Returns:
+            `Tuple[str, str]` tuple of transsfer id and filename.
+        """
         cmd = [
             "java",
             "-jar",
@@ -140,7 +181,23 @@ class MFTAutomation(AbstractAutomation):
         return (transfer_id, file_name)
 
     def run_automation(self, **kwargs) -> Tuple[TransferDTO]:
+        """
+        Runs mft automation.
 
+        Args:
+            ```kwargs```: ```Any```
+                extra params to be used for the transfer.
+                - `mft_log_poll_time`
+                    - every N seconds check whether full transfer is done.
+
+        Returns:
+            Tuple of individual file data transfer `Tuple[TransferDTO]`,
+            where each element object stores
+            - filename
+            - start_time
+            - end_time
+            - transferer ("rclone")
+        """
         assert (
             self.source_storage_id and self.dest_storage_id
         ), "Invalid storage ids! Are you sure you have 'source_storage_id' and 'dest_storage_id' in the config?"
@@ -166,6 +223,23 @@ class MFTAutomation(AbstractAutomation):
     ) -> Tuple[TransferDTO]:
         """
         Parses the log and returns start/end times for each file transfer.
+
+        Args:
+            ```transfer_id_names```: ```List[str]```
+                List of files that are submitted for transfer
+            ```poll_wait_time```: ```int```
+                Every `poll_wait_time` seconds, check the status of transfer.
+            ```njobs```: ```int```
+                Total number of parallellism used for checking the status of
+                transfer.
+
+        Returns:
+            Tuple of individual file data transfer `Tuple[TransferDTO]`,
+            where each element object stores
+            - filename
+            - start_time
+            - end_time
+            - transferer ("nifi")
         """
         nids = len(transfer_id_names)
 
