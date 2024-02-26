@@ -1,5 +1,9 @@
 A tool-agnostic data transfer evaluation framework.
 
+
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.10709852.svg)](https://doi.org/10.5281/zenodo.10709852)
+
+
 ## Installation Steps
 
 ```bash
@@ -38,3 +42,4 @@ pip install -e .
 ### Examples and usages
 
 See `tests/` directory for examples.
+
